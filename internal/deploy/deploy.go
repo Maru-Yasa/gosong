@@ -2,10 +2,10 @@ package deploy
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/Maru-Yasa/gosong/pkg/config"
 	"github.com/Maru-Yasa/gosong/pkg/executor"
-	"github.com/Maru-Yasa/gosong/pkg/ssh"
 	"github.com/urfave/cli/v3"
 )
 
@@ -23,7 +23,7 @@ func Run(cli *cli.Command) error {
 	if hostName == "" {
 		// loop all hosts
 		for name, remote := range cfg.Config.Remote {
-			if err := runOnHost(name, remote, "neofetch"); err != nil {
+			if err := runOnHost(&remote, "neofetch"); err != nil {
 				fmt.Printf("host %s failed: %v\n", name, err)
 			}
 		}
@@ -35,23 +35,23 @@ func Run(cli *cli.Command) error {
 		return fmt.Errorf("host %s not found in config", hostName)
 	}
 
-	return runOnHost(hostName, remote, "neofetch")
+	return runOnHost(&remote, "neofetch")
 }
 
-func runOnHost(name string, remote config.RemoteHost, command string) error {
-	sshConfig := ssh.SSHConfig{
-		Host:    remote.Hostname,
-		Port:    uint8(remote.Port),
-		User:    remote.User,
-		Keypath: remote.KeyPath,
-	}
+func runOnHost(remote *config.RemoteHost, command string) error {
+	exec, err := executor.NewExecutorFromConfig(remote)
 
-	sshClient, err := ssh.New(sshConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create SSH client for %s: %w", name, err)
+		log.Panic(err)
 	}
 
-	fmt.Printf("executing on host: %s (%s)\n", name, remote.Hostname)
-	executor.ExecuteCommand(sshClient, command)
+	output, err := exec.Run(command)
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Print(output)
+
 	return nil
 }

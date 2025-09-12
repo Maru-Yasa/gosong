@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Maru-Yasa/gosong/pkg/executor"
+	"github.com/Maru-Yasa/gosong/pkg/common"
 	"gopkg.in/yaml.v3"
 )
 
 type RemoteHost struct {
-	Type     executor.ExecutorType `yaml:"type"`
-	Hostname string                `yaml:"hostname"`
-	User     string                `yaml:"user"`
-	Port     int                   `yaml:"port,omitempty"`
-	KeyPath  string                `yaml:"keyPath,omitempty"`
+	Type     common.ExecutorType `yaml:"type"`
+	Hostname string              `yaml:"hostname"`
+	User     string              `yaml:"user"`
+	Port     int                 `yaml:"port,omitempty"`
+	KeyPath  string              `yaml:"keyPath,omitempty"`
 }
 
 type Config struct {

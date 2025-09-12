@@ -1,31 +1,27 @@
 package executor
 
-import "fmt"
+import (
+	"fmt"
 
-type ExecutorType string
-
-const (
-	ExecutorSSH   ExecutorType = "ssh"
-	ExecutorLocal ExecutorType = "local"
+	"github.com/Maru-Yasa/gosong/pkg/common"
+	"github.com/Maru-Yasa/gosong/pkg/config"
 )
 
-type Executor interface {
+type IExecutor interface {
 	Run(cmd string) (string, error)
 }
 
-func ExecuteCommand(exec Executor, cmd string) {
-	out, err := exec.Run(cmd)
-	if err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Println("Output:", out)
+func NewExecutorFromConfig(cfg *config.RemoteHost) (IExecutor, error) {
+	switch cfg.Type {
+	case common.ExecutorSSH:
+		sshExec, err := newSSHExecutor(cfg)
+		if err != nil {
+			return nil, err
+		}
+		return sshExec, nil
+	case common.ExecutorLocal:
+		return newLocalExecutor()
+	default:
+		return nil, fmt.Errorf("unknown executor type: %s", cfg.Type)
 	}
-}
-
-func (e ExecutorType) IsValid() bool {
-	switch e {
-	case ExecutorSSH, ExecutorLocal:
-		return true
-	}
-	return false
 }
