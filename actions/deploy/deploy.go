@@ -2,7 +2,8 @@ package deploy
 
 import (
 	"fmt"
-	"log"
+
+	"github.com/Maru-Yasa/gosong/pkg/logger"
 
 	"github.com/Maru-Yasa/gosong/internal/common"
 	"github.com/Maru-Yasa/gosong/internal/config"
@@ -11,7 +12,7 @@ import (
 )
 
 func Run(cli *cli.Command) error {
-	fmt.Println("Running deploy with config:")
+	logger.Info(fmt.Sprint("Running deploy with config:"), "client")
 
 	configFilePath := cli.String("config")
 	hostName := cli.String("host")
@@ -26,8 +27,8 @@ func Run(cli *cli.Command) error {
 	if hostName == "" {
 		// loop all hosts
 		for name, remote := range cfg.Config.Remote {
-			if err := runOnHost(&remote, &task); err != nil {
-				fmt.Printf("host %s failed: %v\n", name, err)
+			if err := runOnHost(name, &remote, &task); err != nil {
+				logger.Error(fmt.Sprint("host failed: ", err), name)
 			}
 		}
 		return nil
@@ -38,14 +39,15 @@ func Run(cli *cli.Command) error {
 		return fmt.Errorf("host %s not found in config", hostName)
 	}
 
-	return runOnHost(&remote, &task)
+	return runOnHost(hostName, &remote, &task)
 }
 
-func runOnHost(remote *config.RemoteHost, task *common.Task) error {
-	exec, err := executor.NewExecutorFromConfig(remote)
+func runOnHost(name string, remote *config.RemoteHost, task *common.Task) error {
+	exec, err := executor.NewExecutorFromConfig(name, remote)
 
 	if err != nil {
-		log.Panic(err)
+		logger.Error(fmt.Sprint("Failed to create executor: ", err), remote.Hostname)
+		panic(err)
 	}
 
 	exec.RunTask(task)

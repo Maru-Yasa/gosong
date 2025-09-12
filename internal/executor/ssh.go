@@ -2,8 +2,10 @@ package executor
 
 import (
 	"fmt"
-	"log"
 	"os"
+	"strings"
+
+	"github.com/Maru-Yasa/gosong/pkg/logger"
 
 	"github.com/Maru-Yasa/gosong/internal/common"
 	"github.com/Maru-Yasa/gosong/internal/config"
@@ -11,11 +13,11 @@ import (
 )
 
 type SSHExecutor struct {
-	Client   *ssh.Client
-	Hostname string
+	Client *ssh.Client
+	Name   string
 }
 
-func newSSHExecutor(cfg *config.RemoteHost) (*SSHExecutor, error) {
+func newSSHExecutor(name string, cfg *config.RemoteHost) (*SSHExecutor, error) {
 	key, err := os.ReadFile(cfg.KeyPath)
 
 	if err != nil {
@@ -37,7 +39,7 @@ func newSSHExecutor(cfg *config.RemoteHost) (*SSHExecutor, error) {
 	}
 
 	host := fmt.Sprintf("%s:%d", cfg.Hostname, cfg.Port)
-	log.Printf("SSH: Connecting to %s as user %s\n", host, cfg.User)
+	logger.Info(fmt.Sprint("SSH: Connecting as user ", cfg.User, " (", host, ")"), name)
 
 	client, err := ssh.Dial("tcp", host, sshConfig)
 	if err != nil {
@@ -45,8 +47,8 @@ func newSSHExecutor(cfg *config.RemoteHost) (*SSHExecutor, error) {
 	}
 
 	return &SSHExecutor{
-		Client:   client,
-		Hostname: cfg.Hostname,
+		Client: client,
+		Name:   name,
 	}, nil
 }
 
@@ -67,9 +69,10 @@ func (s *SSHExecutor) RunTask(task *common.Task) {
 		str, err := s.Run(step.Command)
 
 		if err != nil {
-			log.Panic(err)
+			logger.Error(fmt.Sprint("SSH command failed: ", err), s.Name)
+			panic(err)
 		}
 
-		log.Print(str)
+		logger.Info(fmt.Sprint("SSH command output: ", strings.TrimSpace(str)), s.Name)
 	}
 }

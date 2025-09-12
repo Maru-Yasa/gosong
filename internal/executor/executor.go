@@ -12,16 +12,16 @@ type IExecutor interface {
 	RunTask(task *common.Task)
 }
 
-func NewExecutorFromConfig(cfg *config.RemoteHost) (IExecutor, error) {
+func NewExecutorFromConfig(name string, cfg *config.RemoteHost) (IExecutor, error) {
 	switch cfg.Type {
 	case common.ExecutorSSH:
-		sshExec, err := newSSHExecutor(cfg)
+		sshExec, err := newSSHExecutor(name, cfg)
 		if err != nil {
 			return nil, err
 		}
 		return sshExec, nil
 	case common.ExecutorLocal:
-		return newLocalExecutor()
+		return newLocalExecutor(name)
 	default:
 		return nil, fmt.Errorf("unknown executor type: %s", cfg.Type)
 	}

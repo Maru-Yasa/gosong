@@ -1,17 +1,23 @@
 package executor
 
 import (
-	"log"
+	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/Maru-Yasa/gosong/pkg/logger"
 
 	"github.com/Maru-Yasa/gosong/internal/common"
 )
 
-type LocalExecutor struct{}
+type LocalExecutor struct {
+	name string
+}
 
-func newLocalExecutor() (*LocalExecutor, error) {
-	return &LocalExecutor{}, nil
+func newLocalExecutor(name string) (*LocalExecutor, error) {
+	return &LocalExecutor{
+		name: name,
+	}, nil
 }
 
 func (local *LocalExecutor) Run(cmd string) (string, error) {
@@ -31,9 +37,10 @@ func (local *LocalExecutor) RunTask(task *common.Task) {
 		str, err := local.Run(step.Command)
 
 		if err != nil {
-			log.Panic(err)
+			logger.Error(fmt.Sprint("Local command failed: ", err), local.name)
+			panic(err)
 		}
 
-		log.Print(str)
+		logger.Info(fmt.Sprint("Local command output: ", strings.TrimSpace(str)), local.name)
 	}
 }
