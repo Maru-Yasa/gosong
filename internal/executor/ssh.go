@@ -3,11 +3,7 @@ package executor
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	"github.com/Maru-Yasa/gosong/pkg/logger"
-
-	"github.com/Maru-Yasa/gosong/internal/common"
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"golang.org/x/crypto/ssh"
 )
@@ -15,6 +11,10 @@ import (
 type SSHExecutor struct {
 	Client *ssh.Client
 	Name   string
+}
+
+func (s *SSHExecutor) GetName() string {
+	return s.Name
 }
 
 func newSSHExecutor(name string, cfg *config.RemoteHost) (*SSHExecutor, error) {
@@ -39,7 +39,6 @@ func newSSHExecutor(name string, cfg *config.RemoteHost) (*SSHExecutor, error) {
 	}
 
 	host := fmt.Sprintf("%s:%d", cfg.Hostname, cfg.Port)
-	logger.Info(fmt.Sprint("SSH: Connecting as user ", cfg.User, " (", host, ")"), name)
 
 	client, err := ssh.Dial("tcp", host, sshConfig)
 	if err != nil {
@@ -62,17 +61,4 @@ func (s *SSHExecutor) Run(cmd string) (string, error) {
 
 	output, err := session.CombinedOutput(cmd)
 	return string(output), err
-}
-
-func (s *SSHExecutor) RunTask(task *common.Task) {
-	for _, step := range task.Steps {
-		str, err := s.Run(step.Command)
-
-		if err != nil {
-			logger.Error(fmt.Sprint("SSH command failed: ", err), s.Name)
-			panic(err)
-		}
-
-		logger.Info(fmt.Sprint("SSH command output: ", strings.TrimSpace(str)), s.Name)
-	}
 }

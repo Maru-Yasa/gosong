@@ -21,12 +21,11 @@ type Config struct {
 		Remote map[string]RemoteHost `yaml:"remote,omitempty"`
 	} `yaml:"config"`
 
-	Task map[string]common.Task `yaml:"tasks"`
+	Tasks map[string]common.Task `yaml:"tasks"`
 }
 
 func Load(filePath string) (*Config, error) {
 	yamlFile, err := os.ReadFile(filePath)
-
 	if err != nil {
 		return nil, err
 	}
