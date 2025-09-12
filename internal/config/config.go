@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Maru-Yasa/gosong/pkg/common"
+	"github.com/Maru-Yasa/gosong/internal/common"
 	"gopkg.in/yaml.v3"
 )
 

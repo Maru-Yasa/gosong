@@ -3,8 +3,8 @@ package executor
 import (
 	"fmt"
 
-	"github.com/Maru-Yasa/gosong/pkg/common"
-	"github.com/Maru-Yasa/gosong/pkg/config"
+	"github.com/Maru-Yasa/gosong/internal/common"
+	"github.com/Maru-Yasa/gosong/internal/config"
 )
 
 type IExecutor interface {

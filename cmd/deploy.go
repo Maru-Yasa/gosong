@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Maru-Yasa/gosong/internal/deploy"
+	"github.com/Maru-Yasa/gosong/actions/deploy"
 	"github.com/urfave/cli/v3"
 )
 

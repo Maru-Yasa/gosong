@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/Maru-Yasa/gosong/pkg/config"
+	"github.com/Maru-Yasa/gosong/internal/config"
 	"golang.org/x/crypto/ssh"
 )
 

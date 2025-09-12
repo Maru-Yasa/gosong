@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Maru-Yasa/gosong/pkg/config"
-	"github.com/Maru-Yasa/gosong/pkg/executor"
+	"github.com/Maru-Yasa/gosong/internal/config"
+	"github.com/Maru-Yasa/gosong/internal/executor"
 	"github.com/urfave/cli/v3"
 )
 
