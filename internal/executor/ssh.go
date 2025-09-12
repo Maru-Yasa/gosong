@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Maru-Yasa/gosong/internal/common"
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"golang.org/x/crypto/ssh"
 )
@@ -59,4 +60,16 @@ func (s *SSHExecutor) Run(cmd string) (string, error) {
 
 	output, err := session.CombinedOutput(cmd)
 	return string(output), err
+}
+
+func (s *SSHExecutor) RunTask(task *common.Task) {
+	for _, step := range task.Steps {
+		str, err := s.Run(step.Command)
+
+		if err != nil {
+			log.Panic(err)
+		}
+
+		log.Print(str)
+	}
 }

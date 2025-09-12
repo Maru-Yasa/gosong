@@ -9,6 +9,7 @@ import (
 
 type IExecutor interface {
 	Run(cmd string) (string, error)
+	RunTask(task *common.Task)
 }
 
 func NewExecutorFromConfig(cfg *config.RemoteHost) (IExecutor, error) {

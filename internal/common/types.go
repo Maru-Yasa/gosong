@@ -14,3 +14,12 @@ func (e ExecutorType) IsValid() bool {
 	}
 	return false
 }
+
+type Step struct {
+	Command string `yaml:"command"`
+}
+
+type Task struct {
+	Name  string
+	Steps []Step `yaml:"steps"`
+}

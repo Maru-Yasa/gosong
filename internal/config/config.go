@@ -21,11 +21,7 @@ type Config struct {
 		Remote map[string]RemoteHost `yaml:"remote,omitempty"`
 	} `yaml:"config"`
 
-	Task map[string]struct {
-		Steps []struct {
-			Command string `yaml:"command"`
-		} `yaml:"steps"`
-	}
+	Task map[string]common.Task `yaml:"tasks"`
 }
 
 func Load(filePath string) (*Config, error) {

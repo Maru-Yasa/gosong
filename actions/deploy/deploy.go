@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Maru-Yasa/gosong/internal/common"
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"github.com/Maru-Yasa/gosong/internal/executor"
 	"github.com/urfave/cli/v3"
@@ -20,10 +21,12 @@ func Run(cli *cli.Command) error {
 		return err
 	}
 
+	task := cfg.Task["deploy"]
+
 	if hostName == "" {
 		// loop all hosts
 		for name, remote := range cfg.Config.Remote {
-			if err := runOnHost(&remote, "neofetch"); err != nil {
+			if err := runOnHost(&remote, &task); err != nil {
 				fmt.Printf("host %s failed: %v\n", name, err)
 			}
 		}
@@ -35,23 +38,17 @@ func Run(cli *cli.Command) error {
 		return fmt.Errorf("host %s not found in config", hostName)
 	}
 
-	return runOnHost(&remote, "neofetch")
+	return runOnHost(&remote, &task)
 }
 
-func runOnHost(remote *config.RemoteHost, command string) error {
+func runOnHost(remote *config.RemoteHost, task *common.Task) error {
 	exec, err := executor.NewExecutorFromConfig(remote)
 
 	if err != nil {
 		log.Panic(err)
 	}
 
-	output, err := exec.Run(command)
-
-	if err != nil {
-		log.Panic(err)
-	}
-
-	log.Print(output)
+	exec.RunTask(task)
 
 	return nil
 }
