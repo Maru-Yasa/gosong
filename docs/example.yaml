@@ -1,0 +1,17 @@
+config:
+  remote:
+    prod:
+      type: ssh
+      hostname: "your_host_name"
+      user: "your_username"
+      port: 22
+      keyPath: /file/to/ssh
+      
+    staging:
+      type: local
+
+tasks:
+  deploy:
+    steps:
+      - command: "echo 'Running deployment steps...'"
+      - command: "neofetch"
