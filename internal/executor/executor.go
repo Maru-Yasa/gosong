@@ -10,11 +10,12 @@ import (
 )
 
 type Executor interface {
-	Run(cmd string) (string, error)
+	Run(cmd string, cwd string) (string, error)
 	GetName() string
 }
 
-func RunTask(exec Executor, taskName string, tasks map[string]common.Task) error {
+// RunTask runs a task by name, supporting step fields: cd, run, task. Maintains cwd state across tasks.
+func RunTask(exec Executor, taskName string, tasks map[string]common.Task, cwd string) error {
 	task, ok := tasks[taskName]
 	execInfo := fmt.Sprintf("[%s]", exec.GetName())
 	taskInfo := fmt.Sprintf("Executing Task: %s", taskName)
@@ -27,24 +28,25 @@ func RunTask(exec Executor, taskName string, tasks map[string]common.Task) error
 		fmt.Sprintf("%s %s", execInfo, taskInfo),
 	)
 
+	currentCwd := cwd
 	for _, step := range task.Steps {
-		switch step.Type {
-		case common.StepTypeCommand:
-			str, err := exec.Run(step.Command)
+		switch {
+		case step.Cd != "":
+			currentCwd = step.Cd
+			logger.Info(fmt.Sprintf("Change directory to: %s", currentCwd))
+		case step.Run != "":
+			str, err := exec.Run(step.Run, currentCwd)
 			if err != nil {
 				logger.Error(fmt.Sprintf("Command failed: %v\nOutput: %s", err, strings.TrimSpace(str)), exec.GetName())
 				return fmt.Errorf("command failed: %v\noutput: %s", err, strings.TrimSpace(str))
 			}
-
-			logger.Info(
-				fmt.Sprintf("%s -> %s", execInfo, fmt.Sprint(strings.TrimSpace(str))),
-			)
-		case common.StepTypeTask:
-			if err := RunTask(exec, step.Task, tasks); err != nil {
+			logger.Info(fmt.Sprint(strings.TrimSpace(str)))
+		case step.Task != "":
+			if err := RunTask(exec, step.Task, tasks, currentCwd); err != nil {
 				return err
 			}
 		default:
-			return fmt.Errorf("unknown step type: %s", step.Type)
+			return fmt.Errorf("invalid step: %+v", step)
 		}
 	}
 	return nil

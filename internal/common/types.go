@@ -1,21 +1,14 @@
 package common
 
-type StepType string
-
-const (
-	StepTypeCommand StepType = "command"
-	StepTypeTask    StepType = "task"
-)
-
 type Step struct {
-	Type    StepType `yaml:"type"`
-	Command string   `yaml:"command,omitempty"`
-	Task    string   `yaml:"task,omitempty"`
+	Cd   string `yaml:"cd,omitempty"`
+	Run  string `yaml:"run,omitempty"`
+	Task string `yaml:"task,omitempty"`
 }
 
 type Task struct {
 	Description string `yaml:"description,omitempty"`
-	Steps       []Step `yaml:"steps"`
+	Steps       []Step
 }
 
 type ExecutorType string

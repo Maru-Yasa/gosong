@@ -48,7 +48,7 @@ func runOnHost(name string, remote *config.RemoteHost, taskName string, tasks ma
 		logger.Error(fmt.Sprint("Failed to create executor: ", err), remote.Hostname)
 		return err
 	}
-	if err := executor.RunTask(exec, taskName, tasks); err != nil {
+	if err := executor.RunTask(exec, taskName, tasks, ""); err != nil {
 		logger.Error(fmt.Sprint("Task failed: ", err), name)
 		return err
 	}

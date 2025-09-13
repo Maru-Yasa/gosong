@@ -14,7 +14,7 @@ type ConsoleLogger struct {
 
 func NewConsoleLogger() *ConsoleLogger {
 	return &ConsoleLogger{
-		logger: log.NewWithOptions(os.Stdout, log.Options{ReportTimestamp: true}),
+		logger: log.NewWithOptions(os.Stdout, log.Options{ReportTimestamp: false}),
 	}
 }
 

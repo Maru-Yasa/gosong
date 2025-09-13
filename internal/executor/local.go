@@ -19,11 +19,14 @@ func newLocalExecutor(name string) (*LocalExecutor, error) {
 	}, nil
 }
 
-func (local *LocalExecutor) Run(cmd string) (string, error) {
+func (local *LocalExecutor) Run(cmd string, cwd string) (string, error) {
 	parts := strings.Fields(cmd)
 	program := parts[0]
 	args := parts[1:]
 	cmdResult := exec.Command(program, args...)
+	if cwd != "" {
+		cmdResult.Dir = cwd
+	}
 	output, err := cmdResult.CombinedOutput()
 	return string(output), err
 }

@@ -13,5 +13,5 @@ config:
 tasks:
   deploy:
     steps:
-      - command: echo 'Running deployment steps...'
-      - command: neofetch
+      - cd: /var/log
+      - run: "echo 'doing something'"
