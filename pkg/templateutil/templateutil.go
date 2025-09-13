@@ -2,7 +2,7 @@ package templateutil
 
 import (
 	"bytes"
-	"encoding/json"
+	"reflect"
 	"text/template"
 )
 
@@ -20,13 +20,19 @@ func RenderTemplate(input string, vars map[string]any) (string, error) {
 }
 
 func ToMap(input any) (map[string]any, error) {
-	data, err := json.Marshal(input)
-	if err != nil {
-		return nil, err
+	out := make(map[string]any)
+	v := reflect.ValueOf(input)
+	t := reflect.TypeOf(input)
+
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+		t = t.Elem()
 	}
-	var out map[string]any
-	if err := json.Unmarshal(data, &out); err != nil {
-		return nil, err
+
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i).Interface()
+		out[field.Name] = value
 	}
 	return out, nil
 }

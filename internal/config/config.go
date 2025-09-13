@@ -24,9 +24,9 @@ type Source struct {
 }
 
 type ConfigRoot struct {
-	Remote      map[string]RemoteHost `yaml:"remote,omitempty"`
-	ReleasePath string                `yaml:"release_path"`
-	Source      Source                `yaml:"source"`
+	Remote  map[string]RemoteHost `yaml:"remote,omitempty"`
+	AppPath string                `yaml:"app_path"`
+	Source  Source                `yaml:"source"`
 }
 
 type Config struct {

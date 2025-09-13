@@ -11,60 +11,68 @@ import (
 	"github.com/Maru-Yasa/gosong/pkg/templateutil"
 )
 
+// RunTaskParams is used to pass parameters to RunTask
+type RunTaskParams struct {
+	Exec     Executor
+	Cfg      *config.ConfigRoot
+	CfgMap   map[string]any
+	TaskName string
+	UTask    map[string]tasks.Task
+	Cwd      string
+}
+
 type Executor interface {
+	RunRaw(cmd string) (string, error)
 	Run(cmd string, cwd string) (string, error)
 	GetName() string
 }
 
 // RunTask runs a task by name, supporting step fields: cd, run, task. Maintains cwd state across tasks.
-func RunTask(exec Executor, cfg *config.ConfigRoot, taskName string, uTask map[string]tasks.Task, cwd string) error {
+func RunTask(params RunTaskParams) error {
 	// searching for task, whatever on user defined tasks or mine
-	task, err := tasks.FindTask(taskName, uTask)
-
+	task, err := tasks.FindTask(params.TaskName, params.UTask)
 	if err != nil {
 		return err
 	}
 
 	// for logging
-	execInfo := fmt.Sprintf("[%s]", exec.GetName())
-	taskInfo := fmt.Sprintf("Executing Task: %s", taskName)
-
-	// load config as config map for templating needs
-	// i know it's still ugly but it's working
-	// TODO: change if u had better approach
-	cfgMap, _ := templateutil.ToMap(cfg)
+	execInfo := fmt.Sprintf("[%s]", params.Exec.GetName())
+	taskInfo := fmt.Sprintf("Executing Task: %s", params.TaskName)
 
 	logger.Info(
 		fmt.Sprintf("%s %s", execInfo, taskInfo),
 	)
 
-	currentCwd := cwd
+	currentCwd := params.Cwd
 	for _, step := range task.Steps {
 		switch {
 		case step.Cd != "":
-			cmdCd, err := templateutil.RenderTemplate(step.Cd, cfgMap)
-
+			cmdCd, err := templateutil.RenderTemplate(step.Cd, params.CfgMap)
 			if err != nil {
 				return fmt.Errorf("command failed to render: %s", err)
 			}
-
 			currentCwd = cmdCd
 			logger.Info(fmt.Sprintf("Change directory to: %s", currentCwd))
 		case step.Run != "":
-			cmdRun, err := templateutil.RenderTemplate(step.Run, cfgMap)
-
+			cmdRun, err := templateutil.RenderTemplate(step.Run, params.CfgMap)
 			if err != nil {
 				return fmt.Errorf("command failed to render: %s", err)
 			}
-
-			str, err := exec.Run(cmdRun, currentCwd)
+			str, err := params.Exec.Run(cmdRun, currentCwd)
 			if err != nil {
-				logger.Error(fmt.Sprintf("Command failed: %v\nOutput: %s", err, strings.TrimSpace(str)), exec.GetName())
+				logger.Error(fmt.Sprintf("Command failed: %v\nOutput: %s", err, strings.TrimSpace(str)), params.Exec.GetName())
 				return fmt.Errorf("command failed: %v\noutput: %s", err, strings.TrimSpace(str))
 			}
 			logger.Info(fmt.Sprint(strings.TrimSpace(str)))
 		case step.Task != "":
-			if err := RunTask(exec, cfg, step.Task, uTask, currentCwd); err != nil {
+			if err := RunTask(RunTaskParams{
+				Exec:     params.Exec,
+				Cfg:      params.Cfg,
+				CfgMap:   params.CfgMap,
+				TaskName: step.Task,
+				UTask:    params.UTask,
+				Cwd:      currentCwd,
+			}); err != nil {
 				return err
 			}
 		default:

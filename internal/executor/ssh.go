@@ -51,6 +51,20 @@ func newSSHExecutor(name string, cfg *config.RemoteHost) (*SSHExecutor, error) {
 	}, nil
 }
 
+func (s *SSHExecutor) RunRaw(cmd string) (string, error) {
+	session, err := s.Client.NewSession()
+
+	if err != nil {
+		return "", err
+	}
+
+	defer session.Close()
+	fullCmd := cmd
+	out, err := session.CombinedOutput(fullCmd)
+
+	return string(out), err
+}
+
 func (s *SSHExecutor) Run(cmd string, cwd string) (string, error) {
 	session, err := s.Client.NewSession()
 

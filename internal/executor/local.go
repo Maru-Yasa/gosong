@@ -19,6 +19,10 @@ func newLocalExecutor(name string) (*LocalExecutor, error) {
 	}, nil
 }
 
+func (local *LocalExecutor) RunRaw(cmd string) (string, error) {
+	return local.Run(cmd, "")
+}
+
 func (local *LocalExecutor) Run(cmd string, cwd string) (string, error) {
 	parts := strings.Fields(cmd)
 	program := parts[0]
