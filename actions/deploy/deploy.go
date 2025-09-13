@@ -27,7 +27,7 @@ func Run(cli *cli.Command) error {
 	if hostName == "" {
 		// loop all hosts
 		for name, remote := range cfg.Config.Remote {
-			if err := runOnHost(name, &remote, "deploy", cfg.Tasks); err != nil {
+			if err := runOnHost(name, &cfg.Config, &remote, "deploy", cfg.Tasks); err != nil {
 				logger.Error(fmt.Sprint("host failed: ", err), name)
 			}
 		}
@@ -39,16 +39,16 @@ func Run(cli *cli.Command) error {
 		return fmt.Errorf("host %s not found in config", hostName)
 	}
 
-	return runOnHost(hostName, &remote, "deploy", cfg.Tasks)
+	return runOnHost(hostName, &cfg.Config, &remote, "deploy", cfg.Tasks)
 }
 
-func runOnHost(name string, remote *config.RemoteHost, taskName string, tasks map[string]common.Task) error {
+func runOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, taskName string, tasks map[string]common.Task) error {
 	exec, err := executor.NewExecutorFromConfig(name, remote)
 	if err != nil {
 		logger.Error(fmt.Sprint("Failed to create executor: ", err), remote.Hostname)
 		return err
 	}
-	if err := executor.RunTask(exec, taskName, tasks, ""); err != nil {
+	if err := executor.RunTask(exec, cfg, taskName, tasks, ""); err != nil {
 		logger.Error(fmt.Sprint("Task failed: ", err), name)
 		return err
 	}

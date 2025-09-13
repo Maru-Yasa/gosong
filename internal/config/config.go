@@ -16,12 +16,14 @@ type RemoteHost struct {
 	KeyPath  string              `yaml:"keyPath,omitempty"`
 }
 
-type Config struct {
-	Config struct {
-		Remote map[string]RemoteHost `yaml:"remote,omitempty"`
-	} `yaml:"config"`
+type ConfigRoot struct {
+	Remote      map[string]RemoteHost `yaml:"remote,omitempty"`
+	ReleasePath string                `yaml:"release_path"`
+}
 
-	Tasks map[string]common.Task `yaml:"tasks"`
+type Config struct {
+	Config ConfigRoot             `yaml:"config"`
+	Tasks  map[string]common.Task `yaml:"tasks"`
 }
 
 func Load(filePath string) (*Config, error) {
