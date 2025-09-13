@@ -1,17 +1,43 @@
+
 config:
+  app_path: <your_app_path>
+  source:
+    type: git
+    url: "<your_repo_url>"
+    branch: main
+
   remote:
     prod:
       type: ssh
-      hostname: "your_host_name"
-      user: "your_username"
+      hostname: "<your_hostname>"
+      user: "<your_user>"
       port: 22
-      keyPath: /file/to/ssh
-      
+      keyPath: <your_ssh_key_path>
     staging:
       type: local
 
 tasks:
-  deploy:
+  prepare:
+    description: "Preparation steps before deployment"
     steps:
-      - cd: /var/log
-      - run: "echo 'doing something'"
+      - run: "echo 'Preparing'"
+      - run: "echo 'Checking prerequisites'"
+
+  build:
+    description: "Build the application"
+    steps:
+      - run: "echo 'Building project...'"
+
+  test:
+    description: "Run tests before deployment"
+    steps:
+      - run: "echo 'Running tests...'"
+
+  deploy:
+    description: "Deploy the application"
+    steps:
+      - task: lock
+      - task: fetch
+      - task: symlink
+      - task: unlock
+
