@@ -1,38 +1,73 @@
 package logger
 
 import (
-	"fmt"
-	"os"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"sync"
 )
 
-var log *zap.SugaredLogger
-
-func Init() error {
-	cfg := zap.NewDevelopmentEncoderConfig()
-	cfg.EncodeTime = zapcore.TimeEncoderOfLayout("2006/01/02 15:04:05")
-	encoder := zapcore.NewConsoleEncoder(cfg)
-	core := zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), zapcore.InfoLevel)
-	logger := zap.New(core)
-	log = logger.Sugar()
-	return nil
+// Logger is the interface for logging
+type Logger interface {
+	Info(format string, args ...interface{})
+	Warn(format string, args ...interface{})
+	Error(format string, args ...interface{})
 }
 
-func Info(msg string, host string, fields ...interface{}) {
-	prefix := fmt.Sprintf("[%s]", host)
-	log.Infof("%s %s", prefix, fmt.Sprintf(msg, fields...))
+// MultiLogger broadcasts logs to multiple loggers
+type MultiLogger struct {
+	loggers []Logger
 }
 
-func Error(msg string, host string, fields ...interface{}) {
-	prefix := fmt.Sprintf("[%s]", host)
-	log.Errorf("%s %s", prefix, fmt.Sprintf(msg, fields...))
+func NewMultiLogger(loggers ...Logger) *MultiLogger {
+	return &MultiLogger{loggers: loggers}
 }
 
-func Sync() error {
-	if log != nil {
-		return log.Sync()
+func (m *MultiLogger) Info(format string, args ...interface{}) {
+	for _, l := range m.loggers {
+		l.Info(format, args...)
 	}
-	return nil
 }
+
+func (m *MultiLogger) Warn(format string, args ...interface{}) {
+	for _, l := range m.loggers {
+		l.Warn(format, args...)
+	}
+}
+
+func (m *MultiLogger) Error(format string, args ...interface{}) {
+	for _, l := range m.loggers {
+		l.Error(format, args...)
+	}
+}
+
+var (
+	defaultLogger Logger = &noopLogger{}
+	once          sync.Once
+)
+
+// SetDefaultLogger sets the global logger (should be called once, e.g. in main)
+func SetDefaultLogger(l Logger) {
+	once.Do(func() {
+		defaultLogger = l
+	})
+}
+
+// Info logs info message to the default logger
+func Info(format string, args ...interface{}) {
+	defaultLogger.Info(format, args...)
+}
+
+// Warn logs warning message to the default logger
+func Warn(format string, args ...interface{}) {
+	defaultLogger.Warn(format, args...)
+}
+
+// Error logs error message to the default logger
+func Error(format string, args ...interface{}) {
+	defaultLogger.Error(format, args...)
+}
+
+// noopLogger implements Logger but does nothing (for zero value safety)
+type noopLogger struct{}
+
+func (n *noopLogger) Info(string, ...interface{})  {}
+func (n *noopLogger) Warn(string, ...interface{})  {}
+func (n *noopLogger) Error(string, ...interface{}) {}

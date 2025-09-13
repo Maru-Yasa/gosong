@@ -12,7 +12,9 @@ import (
 )
 
 func Run(cli *cli.Command) error {
-	logger.Info(fmt.Sprint("Running deploy with config:"), "client")
+	logger.Info(
+		fmt.Sprintf("[%s] Running deploy with config:", "client"),
+	)
 
 	configFilePath := cli.String("config")
 	hostName := cli.String("host")
