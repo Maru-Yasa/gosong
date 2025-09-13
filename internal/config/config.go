@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/Maru-Yasa/gosong/internal/common"
+	"github.com/Maru-Yasa/gosong/internal/tasks"
 	"gopkg.in/yaml.v3"
 )
 
@@ -16,14 +17,21 @@ type RemoteHost struct {
 	KeyPath  string              `yaml:"keyPath,omitempty"`
 }
 
+type Source struct {
+	Type   string `yaml:"type"` // git | local
+	Url    string `yaml:"url,omitempty"`
+	Branch string `yaml:"branch,omitempty"`
+}
+
 type ConfigRoot struct {
 	Remote      map[string]RemoteHost `yaml:"remote,omitempty"`
 	ReleasePath string                `yaml:"release_path"`
+	Source      Source                `yaml:"source"`
 }
 
 type Config struct {
-	Config ConfigRoot             `yaml:"config"`
-	Tasks  map[string]common.Task `yaml:"tasks"`
+	Config ConfigRoot            `yaml:"config"`
+	Tasks  map[string]tasks.Task `yaml:"tasks"`
 }
 
 func Load(filePath string) (*Config, error) {

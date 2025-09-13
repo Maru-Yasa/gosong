@@ -53,14 +53,21 @@ func newSSHExecutor(name string, cfg *config.RemoteHost) (*SSHExecutor, error) {
 
 func (s *SSHExecutor) Run(cmd string, cwd string) (string, error) {
 	session, err := s.Client.NewSession()
+
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+
 	if err != nil {
 		return "", err
 	}
+
 	defer session.Close()
 	fullCmd := cmd
 	if cwd != "" {
 		fullCmd = "cd " + cwd + " && " + cmd
 	}
-	output, err := session.CombinedOutput(fullCmd)
-	return string(output), err
+
+	err = session.Run(fullCmd)
+
+	return fmt.Sprintf("running command -> %s", fullCmd), err
 }

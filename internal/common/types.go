@@ -1,16 +1,5 @@
 package common
 
-type Step struct {
-	Cd   string `yaml:"cd,omitempty"`
-	Run  string `yaml:"run,omitempty"`
-	Task string `yaml:"task,omitempty"`
-}
-
-type Task struct {
-	Description string `yaml:"description,omitempty"`
-	Steps       []Step
-}
-
 type ExecutorType string
 
 const (

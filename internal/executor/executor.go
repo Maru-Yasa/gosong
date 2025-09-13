@@ -6,6 +6,7 @@ import (
 
 	"github.com/Maru-Yasa/gosong/internal/common"
 	"github.com/Maru-Yasa/gosong/internal/config"
+	"github.com/Maru-Yasa/gosong/internal/tasks"
 	"github.com/Maru-Yasa/gosong/pkg/logger"
 	"github.com/Maru-Yasa/gosong/pkg/templateutil"
 )
@@ -16,15 +17,22 @@ type Executor interface {
 }
 
 // RunTask runs a task by name, supporting step fields: cd, run, task. Maintains cwd state across tasks.
-func RunTask(exec Executor, cfg *config.ConfigRoot, taskName string, tasks map[string]common.Task, cwd string) error {
-	task, ok := tasks[taskName]
+func RunTask(exec Executor, cfg *config.ConfigRoot, taskName string, uTask map[string]tasks.Task, cwd string) error {
+	// searching for task, whatever on user defined tasks or mine
+	task, err := tasks.FindTask(taskName, uTask)
+
+	if err != nil {
+		return err
+	}
+
+	// for logging
 	execInfo := fmt.Sprintf("[%s]", exec.GetName())
 	taskInfo := fmt.Sprintf("Executing Task: %s", taskName)
-	cfgMap, _ := templateutil.ToMap(cfg)
 
-	if !ok {
-		return fmt.Errorf("task '%s' not found", taskName)
-	}
+	// load config as config map for templating needs
+	// i know it's still ugly but it's working
+	// TODO: change if u had better approach
+	cfgMap, _ := templateutil.ToMap(cfg)
 
 	logger.Info(
 		fmt.Sprintf("%s %s", execInfo, taskInfo),
@@ -56,7 +64,7 @@ func RunTask(exec Executor, cfg *config.ConfigRoot, taskName string, tasks map[s
 			}
 			logger.Info(fmt.Sprint(strings.TrimSpace(str)))
 		case step.Task != "":
-			if err := RunTask(exec, cfg, step.Task, tasks, currentCwd); err != nil {
+			if err := RunTask(exec, cfg, step.Task, uTask, currentCwd); err != nil {
 				return err
 			}
 		default:

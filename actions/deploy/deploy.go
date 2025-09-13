@@ -5,9 +5,9 @@ import (
 
 	"github.com/Maru-Yasa/gosong/pkg/logger"
 
-	"github.com/Maru-Yasa/gosong/internal/common"
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"github.com/Maru-Yasa/gosong/internal/executor"
+	"github.com/Maru-Yasa/gosong/internal/tasks"
 	"github.com/urfave/cli/v3"
 )
 
@@ -42,7 +42,7 @@ func Run(cli *cli.Command) error {
 	return runOnHost(hostName, &cfg.Config, &remote, "deploy", cfg.Tasks)
 }
 
-func runOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, taskName string, tasks map[string]common.Task) error {
+func runOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, taskName string, tasks map[string]tasks.Task) error {
 	exec, err := executor.NewExecutorFromConfig(name, remote)
 	if err != nil {
 		logger.Error(fmt.Sprint("Failed to create executor: ", err), remote.Hostname)
