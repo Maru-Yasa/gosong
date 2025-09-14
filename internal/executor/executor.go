@@ -2,6 +2,7 @@ package executor
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Maru-Yasa/gosong/internal/common"
@@ -55,6 +56,7 @@ func RunTask(params RunTaskParams) error {
 			logger.Info(fmt.Sprintf("Change directory to: %s", currentCwd))
 		case step.Run != "":
 			cmdRun, err := templateutil.RenderTemplate(step.Run, params.CfgMap)
+
 			if err != nil {
 				return fmt.Errorf("command failed to render: %s", err)
 			}
@@ -80,6 +82,38 @@ func RunTask(params RunTaskParams) error {
 		}
 	}
 	return nil
+}
+
+func GetLastIDFromHost(exec Executor, appPath string) (int, error) {
+	script := fmt.Sprintf(`
+		if [ ! -d %s/releases ]; then
+			echo 0
+			exit 0
+		fi
+
+		last_id=$(find %s/releases -maxdepth 1 -type d -printf "%%f\n" \
+			| grep -E '^[0-9]+$' \
+			| sort -n \
+			| tail -1)
+
+		if [ -z "$last_id" ]; then
+			echo 0
+		else
+			echo "$last_id"
+		fi
+	`, appPath, appPath)
+
+	outputFromExec, err := exec.RunRaw(script)
+	if err != nil {
+		return 0, err
+	}
+
+	id, convErr := strconv.Atoi(strings.TrimSpace(outputFromExec))
+	if convErr != nil {
+		return 0, convErr
+	}
+
+	return id, nil
 }
 
 func NewExecutorFromConfig(name string, cfg *config.RemoteHost) (Executor, error) {

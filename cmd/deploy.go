@@ -20,13 +20,16 @@ func DeployCommand() *cli.Command {
 				Required: true,
 			},
 			&cli.StringFlag{
-				Name:    "host",
-				Aliases: []string{"h"},
+				Name:    "remote",
+				Aliases: []string{"r"},
 				Usage:   "Remote Host",
 			},
 		},
+		Commands: []*cli.Command{
+			DeployListCommand(),
+		},
 		Action: func(ctx context.Context, cli *cli.Command) error {
-			if err := deploy.Run(cli); err != nil {
+			if err := deploy.Deploy(cli); err != nil {
 				return fmt.Errorf("deploy failed: %w", err)
 			}
 			return nil

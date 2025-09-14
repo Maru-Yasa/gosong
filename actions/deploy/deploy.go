@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/Maru-Yasa/gosong/pkg/logger"
 	"github.com/Maru-Yasa/gosong/pkg/templateutil"
@@ -15,13 +14,13 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-func Run(cli *cli.Command) error {
+func Deploy(cli *cli.Command) error {
 	logger.Info(
 		fmt.Sprintf("[%s] Running deploy with config:", "client"),
 	)
 
 	configFilePath := cli.String("config")
-	hostName := cli.String("host")
+	hostName := cli.String("remote")
 
 	cfg, err := config.Load(configFilePath)
 	if err != nil {
@@ -53,7 +52,7 @@ func runOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, t
 		return err
 	}
 
-	lastReleaseID, err := getLastIDFromHost(exec, cfg.AppPath)
+	lastReleaseID, err := executor.GetLastIDFromHost(exec, cfg.AppPath)
 
 	if err != nil {
 		return err
@@ -84,36 +83,4 @@ func runOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, t
 		return err
 	}
 	return nil
-}
-
-func getLastIDFromHost(exec executor.Executor, appPath string) (int, error) {
-	script := fmt.Sprintf(`
-		if [ ! -d %s/releases ]; then
-			echo 0
-			exit 0
-		fi
-
-		last_id=$(find %s/releases -maxdepth 1 -type d -printf "%%f\n" \
-			| grep -E '^[0-9]+$' \
-			| sort -n \
-			| tail -1)
-
-		if [ -z "$last_id" ]; then
-			echo 0
-		else
-			echo "$last_id"
-		fi
-	`, appPath, appPath)
-
-	outputFromExec, err := exec.RunRaw(script)
-	if err != nil {
-		return 0, err
-	}
-
-	id, convErr := strconv.Atoi(strings.TrimSpace(outputFromExec))
-	if convErr != nil {
-		return 0, convErr
-	}
-
-	return id, nil
 }
