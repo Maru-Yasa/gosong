@@ -9,7 +9,6 @@ import (
 )
 
 func DeployList(cli *cli.Command) error {
-
 	configFilePath := cli.String("config")
 	hostName := cli.String("remote")
 
@@ -22,7 +21,7 @@ func DeployList(cli *cli.Command) error {
 	if hostName == "" {
 		// loop all hosts
 		for name, remote := range cfg.Config.Remote {
-			if err := runOnHost(name, &cfg.Config, &remote, "show_releases", cfg.Tasks); err != nil {
+			if err := runTaskOnHost(name, &cfg.Config, &remote, "show_releases", cfg.Tasks); err != nil {
 				logger.Error(fmt.Sprint("host failed: ", err), name)
 			}
 		}
@@ -31,5 +30,5 @@ func DeployList(cli *cli.Command) error {
 
 	remote := cfg.Config.Remote[hostName]
 
-	return runOnHost(hostName, &cfg.Config, &remote, "show_releases", cfg.Tasks)
+	return runTaskOnHost(hostName, &cfg.Config, &remote, "show_releases", cfg.Tasks)
 }
