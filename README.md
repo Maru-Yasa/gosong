@@ -1,4 +1,5 @@
 # gosong (Work In Progress)
+![Banner](https://raw.githubusercontent.com/Maru-Yasa/gosong/main/docs/banner.png)
 
 A straightforward deployment just like deployer.org but made by me, LOL
 
