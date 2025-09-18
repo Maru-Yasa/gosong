@@ -1,11 +1,10 @@
 package daemon
 
 import (
-	"fmt"
-	"log"
 	"os"
 
-	"github.com/Maru-Yasa/gosong/internal/agent"
+	"github.com/Maru-Yasa/gosong/internal/daemon"
+	"github.com/Maru-Yasa/gosong/pkg/logger"
 	libdaemon "github.com/sevlyar/go-daemon"
 	"github.com/urfave/cli/v3"
 )
@@ -22,7 +21,8 @@ func Daemon(cli *cli.Command) error {
 
 	d, err := dContext.Reborn()
 	if err != nil {
-		fmt.Println("Failed to start daemon:", err)
+		fileLogger := logger.NewConsoleLogger()
+		fileLogger.Error("Failed to start daemon: %v", err)
 		os.Exit(1)
 	}
 	if d != nil {
@@ -31,18 +31,21 @@ func Daemon(cli *cli.Command) error {
 
 	defer dContext.Release()
 
-	dAgent := agent.New()
+	dAgent := daemon.New()
 	if err := dAgent.Run(); err != nil {
 		return err
 	}
 
 	// serve signal
+	fileLogger := logger.NewFileLogger()
 	err = libdaemon.ServeSignals()
 	if err != nil {
-		log.Printf("Error: %s", err.Error())
+		fileLogger.Error("Error: %s", err.Error())
+		fileLogger.Sync()
 	}
 
-	log.Println("daemon terminated")
+	fileLogger.Info("daemon terminated")
+	fileLogger.Sync()
 
 	return nil
 }
