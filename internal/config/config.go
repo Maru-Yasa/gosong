@@ -23,9 +23,17 @@ type Source struct {
 	Branch string `yaml:"branch,omitempty"`
 }
 
+type App struct {
+	Name  string `yaml:"name"`
+	Path  string `yaml:"path"`
+	Start string `yaml:"start"`
+	Ports []int  `yaml:"ports"`
+}
+
 type ConfigRoot struct {
 	Remote  map[string]RemoteHost `yaml:"remote,omitempty"`
 	AppPath string                `yaml:"app_path"`
+	App     App                   `yaml:"app"`
 	Source  Source                `yaml:"source"`
 }
 
