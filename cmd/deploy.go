@@ -36,3 +36,16 @@ func DeployCommand() *cli.Command {
 		},
 	}
 }
+
+func DeployListCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "list",
+		Usage: "List all released deploy",
+		Action: func(ctx context.Context, cli *cli.Command) error {
+			if err := deploy.DeployList(cli); err != nil {
+				return fmt.Errorf("list deployed failed: %w", err)
+			}
+			return nil
+		},
+	}
+}
