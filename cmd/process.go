@@ -18,6 +18,7 @@ func ProcessCommand() *cli.Command {
 		Usage: "process <command>",
 		Commands: []*cli.Command{
 			ProcessStartCommand(),
+			ProcessStatusCommand(),
 			ProcessStopCommand(),
 		},
 	}
@@ -66,7 +67,7 @@ func ProcessStartCommand() *cli.Command {
 			result, err := conn.Send(payload)
 
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to send command to daemon: %w", err)
 			}
 
 			consoleLogger.Info(result)
@@ -76,6 +77,36 @@ func ProcessStartCommand() *cli.Command {
 	}
 }
 
+func ProcessStatusCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "status",
+		Usage: "<app_name>",
+		Action: func(ctx context.Context, c *cli.Command) error {
+			consoleLogger := logger.NewConsoleLogger()
+			if c.Args().Len() < 1 {
+				consoleLogger.Error("need <app_name>")
+				return fmt.Errorf("need <app_name>")
+			}
+
+			conn := unixsocket.NewClient("/tmp/gosong.sock")
+			app := c.Args().First()
+			payload := map[string]string{
+				"action": string(daemon.ProcessActionStatus),
+				"app":    app,
+			}
+
+			result, err := conn.Send(payload)
+
+			if err != nil {
+				return err
+			}
+
+			consoleLogger.Info(result)
+
+			return nil
+		},
+	}
+}
 
 func ProcessStopCommand() *cli.Command {
 	return &cli.Command{
@@ -92,7 +123,7 @@ func ProcessStopCommand() *cli.Command {
 			app := c.Args().First()
 			payload := map[string]string{
 				"action": string(daemon.ProcessActionStop),
-				"app": app,
+				"app":    app,
 			}
 
 			result, err := conn.Send(payload)
