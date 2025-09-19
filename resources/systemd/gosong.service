@@ -1,0 +1,13 @@
+[Unit]
+Description=Gosong Agent Daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/gosong/gosong daemon
+WorkingDirectory=/var/lib/gosong
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

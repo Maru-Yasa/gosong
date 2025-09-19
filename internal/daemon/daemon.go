@@ -8,6 +8,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/Maru-Yasa/gosong/internal/config"
 	"github.com/Maru-Yasa/gosong/pkg/unixsocket"
 )
 
@@ -23,6 +24,11 @@ const (
 type Process struct {
 	sockFile string
 	server   *unixsocket.Server
+}
+
+var ProcessCfg config.ProcessConfig = config.ProcessConfig{
+	AgentPath:   "/opt/gosong",
+	ProcessPath: "/var/lib/gosong/apps",
 }
 
 func New() *Process {
@@ -122,14 +128,14 @@ func Stop(appName string) {
 	portFile := appName + ".port"
 
 	data, err := os.ReadFile(pidFile)
-	if err != nil {	
+	if err != nil {
 		fmt.Printf("%v", err)
 		return
 	}
 
 	pid, _ := strconv.Atoi(string(data))
 	proc, err := os.FindProcess(pid)
-	
+
 	if err != nil {
 		fmt.Printf("%v", err)
 	}

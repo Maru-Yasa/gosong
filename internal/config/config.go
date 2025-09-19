@@ -9,6 +9,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type ProcessConfig struct {
+	AgentPath   string
+	ProcessPath string
+}
+
 type RemoteHost struct {
 	Type     common.ExecutorType `yaml:"type"`
 	Hostname string              `yaml:"hostname"`
