@@ -28,7 +28,6 @@ type Executor interface {
 	GetName() string
 }
 
-// RunTask runs a task by name, supporting step fields: cd, run, task. Maintains cwd state across tasks.
 func RunTask(params RunTaskParams) error {
 	// searching for task, whatever on user defined tasks or mine
 	task, err := tasks.FindTask(params.TaskName, params.UTask)

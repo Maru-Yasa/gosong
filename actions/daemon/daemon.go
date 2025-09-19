@@ -15,7 +15,7 @@ func Daemon(cli *cli.Command) error {
 		PidFilePerm: 0644,
 		LogFileName: "daemon-gosong.log",
 		LogFilePerm: 0640,
-		WorkDir:     "/var/run/gosong",
+		WorkDir:     "./",
 		Umask:       027,
 	}
 

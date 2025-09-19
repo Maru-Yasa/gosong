@@ -2,14 +2,13 @@ package daemon
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"syscall"
 
-	"github.com/Maru-Yasa/gosong/pkg/proto/kvproto"
+	"github.com/Maru-Yasa/gosong/pkg/unixsocket"
 )
 
 type ProcessCommandAction string
@@ -21,89 +20,65 @@ const (
 	ProcessActionPing  ProcessCommandAction = "ping"
 )
 
-type ProcessCommand struct {
-	Action  ProcessCommandAction
-	AppName string
-	Port    uint8
-	Bin     string
-	Args    []string
-}
-
 type Process struct {
-	Network  string
-	SockFile string
+	sockFile string
+	server   *unixsocket.Server
 }
 
 func New() *Process {
 	return &Process{
-		Network:  "unix",
-		SockFile: "/tmp/gosong.sock",
+		sockFile: "/tmp/gosong.sock",
 	}
 }
 
 func (d *Process) Run() error {
-	// delete previous unix socket
-	_ = os.Remove(d.SockFile)
-
-	listener, err := net.Listen(d.Network, d.SockFile)
-
+	var err error
+	d.server, err = unixsocket.NewServer(d.sockFile)
 	if err != nil {
-		return fmt.Errorf("can't connect unix socker %s", d.SockFile)
+		return err
 	}
 
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			continue
-		}
-		go d.handleConnection(conn)
+	err = d.server.Start()
+	if err != nil {
+		return err
 	}
 
+	return d.server.Accept(d.handleCommand)
 }
 
-func (d *Process) handleConnection(conn net.Conn) error {
-	// this should handle connection from unix socket
-	buf := make([]byte, 1024)
-	n, _ := conn.Read(buf)
-
-	// lazy to use buffer so convert to string
-	msg := string(buf[:n])
-
-	rawCmd := kvproto.Decode(msg)
+func (d *Process) handleCommand(rawCmd map[string]string) (string, error) {
+	fmt.Printf("%+v\n", rawCmd)
 
 	// convert port string as integer
 	port, err := strconv.Atoi(rawCmd["port"])
-
 	if err != nil {
 		port = 0
 	}
 
-	defer conn.Close()
-
 	// split args
 	args := []string{}
-	args = strings.Split(rawCmd["args"], ",")
-
-	dCmd := ProcessCommand{
-		Action:  ProcessCommandAction(rawCmd["action"]),
-		AppName: rawCmd["app"],
-		Port:    uint8(port),
-		Bin:     rawCmd["bin"],
-		Args:    args,
+	if rawCmd["args"] != "" {
+		args = strings.Split(rawCmd["args"], ",")
 	}
 
-	switch dCmd.Action {
+	action := ProcessCommandAction(rawCmd["action"])
+
+	switch action {
 	case ProcessActionStart:
-		Start(dCmd.AppName, dCmd.Bin, int(dCmd.Port), dCmd.Args...)
+		Start(rawCmd["app"], rawCmd["bin"], port, args...)
+		return "started\n", nil
 	case ProcessActionStop:
-		Stop(dCmd.AppName)
+		Stop(rawCmd["app"])
+		return fmt.Sprintf("stopped %s \n", rawCmd["app"]), nil
 	case ProcessStop:
-		os.Exit(0)
+		// We can't actually exit here because it's running in a goroutine
+		// Instead, we'll return a response and let the caller handle the exit
+		return "terminating\n", nil
 	case ProcessActionPing:
-		_, _ = conn.Write([]byte("pong\n"))
+		return "pong\n", nil
+	default:
+		return "unknown command\n", nil
 	}
-
-	return nil
 }
 
 func Start(appName, bin string, port int, args ...string) {
@@ -111,6 +86,16 @@ func Start(appName, bin string, port int, args ...string) {
 	portFile := appName + ".port"
 
 	if _, err := os.Stat(pidFile); err == nil {
+		fmt.Println("DEBUG: pidFile exists, skipping start")
+		return
+	}
+
+	fmt.Println("DEBUG bin :", bin)
+	fmt.Println("DEBUG port :", port)
+	fmt.Println("DEBUG args:", args)
+
+	if _, err := os.Stat(bin); err != nil {
+		fmt.Println("DEBUG bin not found:", err)
 		return
 	}
 
@@ -119,12 +104,17 @@ func Start(appName, bin string, port int, args ...string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	fmt.Println("DEBUG running command:", bin, strings.Join(args, " "))
+
 	if err := cmd.Start(); err != nil {
+		fmt.Printf("ERROR failed to start: %s\n", err)
 		return
 	}
 
-	os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0644)
-	os.WriteFile(portFile, []byte(strconv.Itoa(port)), 0644)
+	fmt.Println("DEBUG process started with PID:", cmd.Process.Pid)
+
+	_ = os.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0644)
+	_ = os.WriteFile(portFile, []byte(strconv.Itoa(port)), 0644)
 }
 
 func Stop(appName string) {
@@ -132,15 +122,19 @@ func Stop(appName string) {
 	portFile := appName + ".port"
 
 	data, err := os.ReadFile(pidFile)
-	if err != nil {
+	if err != nil {	
+		fmt.Printf("%v", err)
 		return
 	}
 
 	pid, _ := strconv.Atoi(string(data))
 	proc, err := os.FindProcess(pid)
-	if err == nil {
-		proc.Signal(syscall.SIGTERM)
+	
+	if err != nil {
+		fmt.Printf("%v", err)
 	}
+
+	proc.Signal(syscall.SIGTERM)
 	os.Remove(pidFile)
 	os.Remove(portFile)
 }

@@ -15,6 +15,7 @@ func Execute() {
 		Commands: []*cli.Command{
 			DeployCommand(),
 			DaemonCommand(),
+			ProcessCommand(),
 		},
 	}
 
