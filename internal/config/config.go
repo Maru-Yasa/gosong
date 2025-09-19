@@ -10,8 +10,9 @@ import (
 )
 
 type ProcessConfig struct {
-	AgentPath   string
-	ProcessPath string
+	AgentPath    string
+	AppsPath     string
+	SockFilePath string
 }
 
 type RemoteHost struct {
