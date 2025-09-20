@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/gosong/gosong daemon
+ExecStart=/opt/gosong/gosong daemon -f
 WorkingDirectory=/var/lib/gosong
 Restart=always
 RestartSec=5

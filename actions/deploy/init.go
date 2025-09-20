@@ -6,6 +6,7 @@ import (
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"github.com/Maru-Yasa/gosong/internal/executor"
 	"github.com/Maru-Yasa/gosong/pkg/logger"
+	resource "github.com/Maru-Yasa/gosong/resources"
 	"github.com/urfave/cli/v3"
 )
 
@@ -40,35 +41,24 @@ func DeployInit(cli *cli.Command) error {
 }
 
 func runInit(hostName string, remote *config.RemoteHost) error {
-	script := `
-REPO="Maru-Yasa/gosong"
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
-
-case $ARCH in
-  x86_64) ARCH=amd64 ;;
-  aarch64) ARCH=arm64 ;;
-esac
-
-ASSET_URL=$(curl -s "https://api.github.com/repos/$REPO/releases" \
-  | grep "browser_download_url" \
-  | grep "$OS-$ARCH.zip" \
-  | head -n 1 \
-  | cut -d '"' -f 4)
-
-echo "Downloading: $ASSET_URL"
-curl -L "$ASSET_URL" -o gosong-$OS-$ARCH.zip
-unzip -o gosong-$OS-$ARCH.zip -d /opt/gosong
-
-mv /opt/gosong/gosong-$OS-$ARCH /opt/gosong/gosong
-chmod +x /opt/gosong/gosong
-	`
 	exec, err := executor.NewExecutorFromConfig(hostName, remote)
 	if err != nil {
 		return err
 	}
 
-	result, err := exec.RunRaw(script)
-	logger.Info("[%s] init gosong: %s", hostName, result)
+	// copy the systemd service config
+	cmd := fmt.Sprintf("cat > /tmp/gosong.service <<'EOF'\n%s\nEOF", resource.SystemdConfig)
+
+	if _, err := exec.RunRaw(cmd); err != nil {
+		return err
+	}
+
+	logger.Info("[%s] copy systemd unit config...", hostName)
+
+	// download the binary thriugh github releases
+	fmt.Printf("%s", resource.InitScript)
+	result, err := exec.RunRaw(resource.InitScript)
+	logger.Info("[%s] download gosong binary: %s", hostName, result)
+
 	return err
 }
