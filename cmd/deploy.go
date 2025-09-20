@@ -27,6 +27,7 @@ func DeployCommand() *cli.Command {
 		},
 		Commands: []*cli.Command{
 			DeployListCommand(),
+			DeployInitCommand(),
 		},
 		Action: func(ctx context.Context, cli *cli.Command) error {
 			if err := deploy.Deploy(cli); err != nil {
@@ -44,6 +45,19 @@ func DeployListCommand() *cli.Command {
 		Action: func(ctx context.Context, cli *cli.Command) error {
 			if err := deploy.DeployList(cli); err != nil {
 				return fmt.Errorf("list deployed failed: %w", err)
+			}
+			return nil
+		},
+	}
+}
+
+func DeployInitCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "init",
+		Usage: "Initialize deployment on remote host(s)",
+		Action: func(ctx context.Context, cli *cli.Command) error {
+			if err := deploy.DeployInit(cli); err != nil {
+				return fmt.Errorf("deploy init failed: %w", err)
 			}
 			return nil
 		},
