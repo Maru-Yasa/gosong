@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 )
 
+const jsonFormat = ".json"
+
 type FileRepository struct {
 	baseDir string
 }
@@ -22,11 +24,11 @@ func NewFileRepository(baseDir string) *FileRepository {
 
 func (r *FileRepository) Save(app AppState) error {
 	data, _ := json.MarshalIndent(app, "", "  ")
-	return os.WriteFile(filepath.Join(r.baseDir, app.Name+".json"), data, 0644)
+	return os.WriteFile(filepath.Join(r.baseDir, app.Name+jsonFormat), data, 0644)
 }
 
 func (r *FileRepository) Find(name string) (*AppState, error) {
-	data, err := os.ReadFile(filepath.Join(r.baseDir, name+".json"))
+	data, err := os.ReadFile(filepath.Join(r.baseDir, name+jsonFormat))
 	if err != nil {
 		return nil, err
 	}
@@ -57,5 +59,5 @@ func (r *FileRepository) FindAll() ([]AppState, error) {
 }
 
 func (r *FileRepository) Delete(name string) error {
-	return os.Remove(filepath.Join(r.baseDir, name+".json"))
+	return os.Remove(filepath.Join(r.baseDir, name+jsonFormat))
 }
