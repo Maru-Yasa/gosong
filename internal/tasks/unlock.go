@@ -1,12 +1,31 @@
 package tasks
 
+import (
+	"fmt"
+
+	"github.com/Maru-Yasa/gosong/pkg/logger"
+	"github.com/Maru-Yasa/gosong/pkg/templateutil"
+)
+
 func init() {
-	// RegisterTask("lock", Task{
-	// 	Description: "Lock deployment to prevent concurrent runs",
-	// 	Steps: []Step{
-	// 		{Run: "if [ -f {{.AppPath}}/.gosong.lock ]; then echo '[lock] Already locked!'; exit 1; fi"},
-	// 		{Run: "echo 'locked' > {{.AppPath}}/.gosong.lock"},
-	// 		{Run: "echo 'Deployment locked succesfully'"},
-	// 	},
-	// })
+	RegisterTask(
+		"unlock",
+		"Remove lock file to allow deployments",
+		func(ctx *Context) error {
+			logger.Info("[%s] Unlocking deployment...", ctx.Exec.GetName())
+
+			// remove the lock file
+			cmd, err := templateutil.RenderTemplate("rm -f {{.AppPath}}/.gosong.lock", ctx.CfgMap)
+			if err != nil {
+				return fmt.Errorf("failed to render rm command: %s", err)
+			}
+
+			err = ctx.Exec.Run(cmd, ctx.Cwd)
+			if err != nil {
+				return fmt.Errorf("failed to remove lock file: %s", err)
+			}
+
+			return nil
+		},
+	)
 }

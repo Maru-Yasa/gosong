@@ -16,6 +16,8 @@ type Context struct {
 	CfgMap map[string]any
 	Exec   executor.Executor
 	Cwd    string
+
+	RenderCmd func(cmd string, data map[string]any) (string, error)
 }
 
 type BTask struct {
@@ -44,6 +46,8 @@ func FindAndRun(name string, uTasks map[string]common.UTask, ctx *Context) error
 			logger.Error("[%s] Task failed: %v", ctx.Exec.GetName(), err)
 			os.Exit(1)
 		}
+
+		return nil
 	}
 
 	// then user defined tasks

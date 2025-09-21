@@ -71,9 +71,10 @@ func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHos
 	cfgMap["ReleasePath"] = filepath.Join(cfg.AppPath, "releases", strconv.Itoa(releaseID))
 
 	ctx := &tasks.Context{
-		CfgMap: cfgMap,
-		Exec:   exec,
-		Cwd:    "",
+		CfgMap:    cfgMap,
+		Exec:      exec,
+		Cwd:       "",
+		RenderCmd: templateutil.RenderTemplate,
 	}
 
 	err = tasks.FindAndRun(taskName, uTasks, ctx)
