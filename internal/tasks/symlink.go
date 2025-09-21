@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Maru-Yasa/gosong/pkg/logger"
-	"github.com/Maru-Yasa/gosong/pkg/templateutil"
 )
 
 func init() {
@@ -15,7 +14,7 @@ func init() {
 			logger.Info("[%s] Updating symlink to latest release...", ctx.Exec.GetName())
 
 			// remove existing symlink
-			cmd, err := templateutil.RenderTemplate("rm -f {{.AppPath}}/current", ctx.CfgMap)
+			cmd, err := ctx.RenderCmd("rm -f {{.AppPath}}/current", ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render rm command: %s", err)
 			}
@@ -25,7 +24,7 @@ func init() {
 			}
 
 			// create new symlink
-			cmd, err = templateutil.RenderTemplate("ln -sfn {{.ReleasePath}} {{.AppPath}}/current", ctx.CfgMap)
+			cmd, err = ctx.RenderCmd("ln -sfn {{.ReleasePath}} {{.AppPath}}/current", ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render ln command: %s", err)
 			}
@@ -35,7 +34,7 @@ func init() {
 			}
 
 			// verify symlink
-			cmd, err = templateutil.RenderTemplate("[[ $(readlink -f {{.AppPath}}/current) == {{.ReleasePath}} ]] || { echo 'symlink error!'; exit 1; }", ctx.CfgMap)
+			cmd, err = ctx.RenderCmd("[[ $(readlink -f {{.AppPath}}/current) == {{.ReleasePath}} ]] || { echo 'symlink error!'; exit 1; }", ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render verification command: %s", err)
 			}
@@ -45,7 +44,7 @@ func init() {
 			}
 
 			// echo success message
-			cmd, err = templateutil.RenderTemplate("echo 'symlink current -> {{.ReleasePath}}'", ctx.CfgMap)
+			cmd, err = ctx.RenderCmd("echo 'symlink current -> {{.ReleasePath}}'", ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render echo command: %s", err)
 			}

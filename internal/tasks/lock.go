@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Maru-Yasa/gosong/pkg/logger"
-	"github.com/Maru-Yasa/gosong/pkg/templateutil"
 )
 
 var lockFileName = ".gosong.lock"
@@ -17,7 +16,7 @@ func init() {
 			logger.Info("[%s] Locking deployment...", ctx.Exec.GetName())
 
 			// check if already locked
-			lockFileCmd, err := templateutil.RenderTemplate("{{.AppPath}}/"+lockFileName, ctx.CfgMap)
+			lockFileCmd, err := ctx.RenderCmd("{{.AppPath}}/"+lockFileName, ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render lock file path: %s", err)
 			}
@@ -28,7 +27,7 @@ func init() {
 			}
 
 			// create the lock file
-			cmd, err := templateutil.RenderTemplate("touch {{.AppPath}}/"+lockFileName, ctx.CfgMap)
+			cmd, err := ctx.RenderCmd("touch {{.AppPath}}/"+lockFileName, ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render touch command: %s", err)
 			}

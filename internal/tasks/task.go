@@ -7,7 +7,6 @@ import (
 	"github.com/Maru-Yasa/gosong/internal/common"
 	"github.com/Maru-Yasa/gosong/internal/executor"
 	"github.com/Maru-Yasa/gosong/pkg/logger"
-	"github.com/Maru-Yasa/gosong/pkg/templateutil"
 )
 
 type TaskFunc func(ctx *Context) error
@@ -64,7 +63,7 @@ func FindAndRun(name string, uTasks map[string]common.UTask, ctx *Context) error
 				return err
 			}
 		} else if step.Run != "" {
-			rCmd, err := templateutil.RenderTemplate(step.Run, ctx.CfgMap)
+			rCmd, err := ctx.RenderCmd(step.Run, ctx.CfgMap)
 
 			if err != nil {
 				return fmt.Errorf("command failed to render: %s", err)
@@ -76,7 +75,7 @@ func FindAndRun(name string, uTasks map[string]common.UTask, ctx *Context) error
 				return err
 			}
 		} else if step.Cd != "" {
-			cmdCd, err := templateutil.RenderTemplate(step.Cd, ctx.CfgMap)
+			cmdCd, err := ctx.RenderCmd(step.Cd, ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("command failed to render: %s", err)
 			}

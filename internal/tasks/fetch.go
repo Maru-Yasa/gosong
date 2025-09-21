@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Maru-Yasa/gosong/pkg/logger"
-	"github.com/Maru-Yasa/gosong/pkg/templateutil"
 )
 
 func init() {
@@ -14,7 +13,7 @@ func init() {
 		func(ctx *Context) error {
 			logger.Info("[%s] Fetching application source...", ctx.Exec.GetName())
 
-			cmd, err := templateutil.RenderTemplate("echo 'Fetching from {{.Source.Type}} -> {{.Source.Url}}'", ctx.CfgMap)
+			cmd, err := ctx.RenderCmd("echo 'Fetching from {{.Source.Type}} -> {{.Source.Url}}'", ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render echo command: %s", err)
 			}
@@ -24,7 +23,7 @@ func init() {
 			}
 
 			// create release directory
-			cmd, err = templateutil.RenderTemplate("mkdir -p {{.ReleasePath}}", ctx.CfgMap)
+			cmd, err = ctx.RenderCmd("mkdir -p {{.ReleasePath}}", ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render mkdir command: %s", err)
 			}
@@ -34,7 +33,7 @@ func init() {
 			}
 
 			// clone repository
-			cmd, err = templateutil.RenderTemplate("git clone --progress --verbose -b {{.Source.Branch}} --depth 1 {{.Source.Url}} {{.ReleasePath}}", ctx.CfgMap)
+			cmd, err = ctx.RenderCmd("git clone --progress --verbose -b {{.Source.Branch}} --depth 1 {{.Source.Url}} {{.ReleasePath}}", ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render git clone command: %s", err)
 			}
@@ -44,7 +43,7 @@ func init() {
 			}
 
 			// remove .git directory
-			cmd, err = templateutil.RenderTemplate("rm -rf {{.ReleasePath}}/.git", ctx.CfgMap)
+			cmd, err = ctx.RenderCmd("rm -rf {{.ReleasePath}}/.git", ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render rm command: %s", err)
 			}

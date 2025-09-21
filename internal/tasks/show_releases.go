@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Maru-Yasa/gosong/pkg/logger"
-	"github.com/Maru-Yasa/gosong/pkg/templateutil"
 )
 
 func init() {
@@ -27,7 +26,7 @@ func init() {
 				done
 			`
 
-			cmd, err := templateutil.RenderTemplate(script, ctx.CfgMap)
+			cmd, err := ctx.RenderCmd(script, ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render show releases script: %s", err)
 			}
