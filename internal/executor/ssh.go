@@ -3,6 +3,7 @@ package executor
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"golang.org/x/crypto/ssh"
@@ -19,13 +20,11 @@ func (s *SSHExecutor) GetName() string {
 
 func newSSHExecutor(name string, cfg *config.RemoteHost) (*SSHExecutor, error) {
 	key, err := os.ReadFile(cfg.KeyPath)
-
 	if err != nil {
 		return nil, err
 	}
 
 	signer, err := ssh.ParsePrivateKey(key)
-
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +35,7 @@ func newSSHExecutor(name string, cfg *config.RemoteHost) (*SSHExecutor, error) {
 			ssh.PublicKeys(signer),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         5 * time.Second, // set timeout
 	}
 
 	host := fmt.Sprintf("%s:%d", cfg.Hostname, cfg.Port)
@@ -53,7 +53,6 @@ func newSSHExecutor(name string, cfg *config.RemoteHost) (*SSHExecutor, error) {
 
 func (s *SSHExecutor) RunRaw(cmd string) (string, error) {
 	session, err := s.Client.NewSession()
-
 	if err != nil {
 		return "", err
 	}

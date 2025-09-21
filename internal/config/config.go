@@ -44,7 +44,7 @@ type ConfigRoot struct {
 }
 
 type Config struct {
-	Config ConfigRoot            `yaml:"config"`
+	Config             ConfigRoot            `yaml:"config"`
 	Tasks  map[string]tasks.Task `yaml:"tasks"`
 }
 

@@ -118,9 +118,7 @@ func (d *Process) handleCommand(rawCmd map[string]string) (string, error) {
 
 	switch action {
 	case ProcessActionStart:
-		fmt.Printf("DEBUG bin : %s\n", rawCmd["bin"])
 		result, err := d.start(rawCmd["app"], rawCmd["bin"], port, args...)
-
 		if err != nil {
 			return fmt.Sprintf("failed to start app: %s\n", err.Error()), nil
 		}
@@ -166,12 +164,18 @@ func (d *Process) start(appName, bin string, port int, args ...string) (string, 
 	}
 
 	// check if binary exists
-	if _, err := os.Stat(bin); err != nil {
-		return "an error occured when searching app binary", fmt.Errorf("binary %s does not exist\n", bin)
+	//if _, err := os.Stat(bin); err != nil {
+	//	return "an error occured when searching app binary", fmt.Errorf("binary %s does not exist\n", bin)
+	//}
+
+	// look for the command path
+	cPath, err := exec.LookPath(bin)
+	if err != nil {
+		return "an error occured when starting the app", fmt.Errorf("binary not found in PATH")
 	}
 
 	// some settings before start the process
-	cmd := exec.Command(bin, args...)
+	cmd := exec.Command(cPath, args...)
 	cmd.Env = append(os.Environ(), "PORT="+strconv.Itoa(port))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -199,7 +203,6 @@ func (d *Process) start(appName, bin string, port int, args ...string) (string, 
 }
 
 func (d *Process) stop(appName string) (string, error) {
-
 	// check if app is exists
 	app, _ := d.repo.Find(appName)
 
