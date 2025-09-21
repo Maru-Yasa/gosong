@@ -8,6 +8,7 @@ import (
 	"github.com/Maru-Yasa/gosong/pkg/logger"
 	"github.com/Maru-Yasa/gosong/pkg/templateutil"
 
+	"github.com/Maru-Yasa/gosong/internal/common"
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"github.com/Maru-Yasa/gosong/internal/executor"
 	"github.com/Maru-Yasa/gosong/internal/tasks"
@@ -45,7 +46,7 @@ func Deploy(cli *cli.Command) error {
 	return runTaskOnHost(hostName, &cfg.Config, &remote, "deploy", cfg.Tasks)
 }
 
-func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, taskName string, tasks map[string]tasks.Task) error {
+func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, taskName string, uTasks map[string]common.UTask) error {
 	exec, err := executor.NewExecutorFromConfig(name, remote)
 	if err != nil {
 		logger.Error(fmt.Sprint("Failed to create executor: ", err), remote.Hostname)
@@ -69,18 +70,17 @@ func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHos
 	cfgMap["ReleaseID"] = releaseID
 	cfgMap["ReleasePath"] = filepath.Join(cfg.AppPath, "releases", strconv.Itoa(releaseID))
 
-	params := executor.RunTaskParams{
-		Exec:     exec,
-		Cfg:      cfg,
-		CfgMap:   cfgMap,
-		TaskName: taskName,
-		UTask:    tasks,
-		Cwd:      "",
+	ctx := &tasks.Context{
+		CfgMap: cfgMap,
+		Exec:   exec,
+		Cwd:    "",
 	}
 
-	if err := executor.RunTask(params); err != nil {
+	err = tasks.FindAndRun(taskName, uTasks, ctx)
+
+	if err != nil {
 		logger.Error(fmt.Sprint("Task failed: ", err), name)
-		return err
 	}
+
 	return nil
 }

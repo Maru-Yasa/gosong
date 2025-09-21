@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -20,10 +21,10 @@ func newLocalExecutor(name string) (*LocalExecutor, error) {
 }
 
 func (local *LocalExecutor) RunRaw(cmd string) (string, error) {
-	return local.Run(cmd, "")
+	return "local executor does not support RunRaw yet", nil
 }
 
-func (local *LocalExecutor) Run(cmd string, cwd string) (string, error) {
+func (local *LocalExecutor) Run(cmd string, cwd string) error {
 	parts := strings.Fields(cmd)
 	program := parts[0]
 	args := parts[1:]
@@ -31,6 +32,10 @@ func (local *LocalExecutor) Run(cmd string, cwd string) (string, error) {
 	if cwd != "" {
 		cmdResult.Dir = cwd
 	}
-	output, err := cmdResult.CombinedOutput()
-	return string(output), err
+
+	cmdResult.Stdout = os.Stdout
+	cmdResult.Stderr = os.Stderr
+
+	err := cmdResult.Run()
+	return err
 }

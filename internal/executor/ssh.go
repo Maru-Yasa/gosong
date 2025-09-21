@@ -64,14 +64,14 @@ func (s *SSHExecutor) RunRaw(cmd string) (string, error) {
 	return string(out), err
 }
 
-func (s *SSHExecutor) Run(cmd string, cwd string) (string, error) {
+func (s *SSHExecutor) Run(cmd string, cwd string) error {
 	session, err := s.Client.NewSession()
 
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	defer session.Close()
@@ -82,5 +82,5 @@ func (s *SSHExecutor) Run(cmd string, cwd string) (string, error) {
 
 	err = session.Run(fullCmd)
 
-	return fmt.Sprintf("running command -> %s", fullCmd), err
+	return err
 }

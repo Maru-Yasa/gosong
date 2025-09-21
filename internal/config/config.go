@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/Maru-Yasa/gosong/internal/common"
-	"github.com/Maru-Yasa/gosong/internal/tasks"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,8 +43,8 @@ type ConfigRoot struct {
 }
 
 type Config struct {
-	Config             ConfigRoot            `yaml:"config"`
-	Tasks  map[string]tasks.Task `yaml:"tasks"`
+	Config ConfigRoot              `yaml:"config"`
+	Tasks  map[string]common.UTask `yaml:"tasks"`
 }
 
 func Load(filePath string) (*Config, error) {
