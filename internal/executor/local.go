@@ -3,11 +3,11 @@ package executor
 import (
 	"os"
 	"os/exec"
-	"strings"
 )
 
 type LocalExecutor struct {
-	name string
+	name  string
+	shell string
 }
 
 func (local *LocalExecutor) GetName() string {
@@ -16,19 +16,20 @@ func (local *LocalExecutor) GetName() string {
 
 func newLocalExecutor(name string) (*LocalExecutor, error) {
 	return &LocalExecutor{
-		name: name,
+		name:  name,
+		shell: "/bin/sh", // default shell
 	}, nil
 }
 
 func (local *LocalExecutor) RunRaw(cmd string) (string, error) {
-	return "local executor does not support RunRaw yet", nil
+	cmdResult := exec.Command(local.shell, "-c", cmd)
+
+	output, err := cmdResult.CombinedOutput()
+	return string(output), err
 }
 
 func (local *LocalExecutor) Run(cmd string, cwd string) error {
-	parts := strings.Fields(cmd)
-	program := parts[0]
-	args := parts[1:]
-	cmdResult := exec.Command(program, args...)
+	cmdResult := exec.Command(local.shell, "-c", cmd)
 	if cwd != "" {
 		cmdResult.Dir = cwd
 	}

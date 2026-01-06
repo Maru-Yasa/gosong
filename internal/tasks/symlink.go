@@ -34,7 +34,7 @@ func init() {
 			}
 
 			// verify symlink
-			cmd, err = ctx.RenderCmd("[[ $(readlink -f {{.AppPath}}/current) == {{.ReleasePath}} ]] || { echo 'symlink error!'; exit 1; }", ctx.CfgMap)
+			cmd, err = ctx.RenderCmd("[ $(readlink -f {{.AppPath}}/current) = {{.ReleasePath}} ] || { echo 'symlink error!'; exit 1; }", ctx.CfgMap)
 			if err != nil {
 				return fmt.Errorf("failed to render verification command: %s", err)
 			}
