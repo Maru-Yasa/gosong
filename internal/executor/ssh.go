@@ -12,6 +12,7 @@ import (
 type SSHExecutor struct {
 	Client *ssh.Client
 	Name   string
+	shell  string
 }
 
 func (s *SSHExecutor) GetName() string {
@@ -48,6 +49,7 @@ func newSSHExecutor(name string, cfg *config.RemoteHost) (*SSHExecutor, error) {
 	return &SSHExecutor{
 		Client: client,
 		Name:   name,
+		shell:  "/bin/sh", // default shell
 	}, nil
 }
 
@@ -56,9 +58,9 @@ func (s *SSHExecutor) RunRaw(cmd string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	defer session.Close()
-	fullCmd := cmd
+
+	fullCmd := fmt.Sprintf("%s -c '%s'", s.shell, cmd)
 	out, err := session.CombinedOutput(fullCmd)
 
 	return string(out), err
@@ -66,21 +68,19 @@ func (s *SSHExecutor) RunRaw(cmd string) (string, error) {
 
 func (s *SSHExecutor) Run(cmd string, cwd string) error {
 	session, err := s.Client.NewSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	fullCmd := cmd
+	if cwd != "" {
+		fullCmd = fmt.Sprintf("cd %s && %s -c '%s'", cwd, s.shell, cmd)
+	}
 
 	session.Stdout = os.Stdout
 	session.Stderr = os.Stderr
 
-	if err != nil {
-		return err
-	}
-
-	defer session.Close()
-	fullCmd := cmd
-	if cwd != "" {
-		fullCmd = "cd " + cwd + " && " + cmd
-	}
-
 	err = session.Run(fullCmd)
-
 	return err
 }
