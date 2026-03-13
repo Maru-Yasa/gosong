@@ -1,0 +1,53 @@
+config:
+  # Path on the remote server where releases will be stored
+  app_path: /opt/myapp
+
+  # Application settings
+  app:
+    name: myapp
+    # Command used to start the application. PORT env var is injected automatically.
+    start: "node server.js"
+    # Two ports for blue-green deployment. gosong alternates between them on each deploy.
+    ports: [3000, 3001]
+
+  # Source code to deploy
+  source:
+    type: git
+    url: "https://github.com/yourorg/myapp"
+    branch: main
+
+  # Proxy configuration (Caddy)
+  proxy:
+    type: caddy
+    # Path on the remote server where gosong writes the per-app Caddyfile snippet.
+    # Add `import /etc/caddy/gosong-myapp.conf` to your main Caddyfile.
+    snippet_path: /etc/caddy/gosong-myapp.conf
+    # Path to the main Caddyfile used for `caddy reload`
+    caddy_config: /etc/caddy/Caddyfile
+    # Site address that Caddy will serve (must match your main Caddyfile or DNS)
+    site_address: myapp.example.com
+
+  # Remote hosts
+  remote:
+    prod:
+      type: ssh
+      hostname: "your-server.example.com"
+      user: "deploy"
+      port: 22
+      keyPath: ~/.ssh/id_rsa
+    staging:
+      type: local
+
+tasks:
+  deploy:
+    description: "Zero-downtime blue-green deploy with Caddy"
+    steps:
+      - task: lock
+      - task: fetch
+      - run: "cd {{.ReleasePath}} && npm ci --omit=dev"
+      - run: "cd {{.ReleasePath}} && npm run build"
+      - task: start-app      # start new instance on GreenPort (the inactive port)
+      - task: proxy-switch   # rewrite Caddyfile snippet + caddy reload
+      - task: stop-old-app   # kill previous instance, persist new active port
+      - task: symlink        # update /opt/myapp/current -> new release
+      - task: unlock

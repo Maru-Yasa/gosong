@@ -115,6 +115,35 @@ func GetLastIDFromHost(exec Executor, appPath string) (int, error) {
 	return id, nil
 }
 
+// GetActivePort reads the currently active port from the remote state file.
+// Falls back to ports[0] if the file doesn't exist (first deploy).
+func GetActivePort(exec Executor, appName string, ports []int) (int, error) {
+	if len(ports) == 0 {
+		return 0, nil
+	}
+	stateFile := fmt.Sprintf("/var/lib/gosong/apps/%s.current_port", appName)
+	out, err := exec.RunRaw(fmt.Sprintf("cat %s 2>/dev/null || echo %d", stateFile, ports[0]))
+	if err != nil {
+		return ports[0], nil
+	}
+	port, convErr := strconv.Atoi(strings.TrimSpace(out))
+	if convErr != nil {
+		return ports[0], nil
+	}
+	return port, nil
+}
+
+// GetGreenPort returns the port in ports that is NOT activePort.
+// Assumes exactly two ports are configured for blue-green deployment.
+func GetGreenPort(ports []int, activePort int) int {
+	for _, p := range ports {
+		if p != activePort {
+			return p
+		}
+	}
+	return activePort
+}
+
 func NewExecutorFromConfig(name string, cfg *config.RemoteHost) (Executor, error) {
 	switch cfg.Type {
 	case common.ExecutorSSH:

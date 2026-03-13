@@ -1,0 +1,10 @@
+# /etc/caddy/Caddyfile
+#
+# This is an example main Caddyfile that imports the gosong-managed snippet.
+# gosong writes the snippet at the path defined in gosong.yaml (proxy.snippet_path).
+# On first run of `gosong deploy init`, gosong creates an empty placeholder at
+# that path so the import below doesn't fail before the first deploy.
+
+# Import the gosong-managed per-app snippet.
+# gosong rewrites this file on each deploy to switch the upstream port.
+import /etc/caddy/gosong-myapp.conf

@@ -5,8 +5,8 @@ import (
 
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"github.com/Maru-Yasa/gosong/internal/executor"
+	"github.com/Maru-Yasa/gosong/internal/proxy"
 	"github.com/Maru-Yasa/gosong/pkg/logger"
-	resource "github.com/Maru-Yasa/gosong/resources"
 	"github.com/urfave/cli/v3"
 )
 
@@ -19,46 +19,57 @@ func DeployInit(cli *cli.Command) error {
 		return err
 	}
 
-	logger.Info("[%s] initialize agent with config: %s", "client", configFilePath)
+	logger.Info("[%s] initializing deployment directories with config: %s", "client", configFilePath)
 
 	if hostName == "" {
 		for name, remote := range cfg.Config.Remote {
-			err := runInit(name, &remote)
-			if err != nil {
-				logger.Error("[%s] error: ", name, err)
+			if err := runInit(name, &remote, &cfg.Config); err != nil {
+				logger.Error("[%s] error: %v", name, err)
 			}
 		}
 		return nil
 	}
 
 	remote, ok := cfg.Config.Remote[hostName]
-
 	if !ok {
 		return fmt.Errorf("host %s not found in config", hostName)
 	}
 
-	return runInit(hostName, &remote)
+	return runInit(hostName, &remote, &cfg.Config)
 }
 
-func runInit(hostName string, remote *config.RemoteHost) error {
+func runInit(hostName string, remote *config.RemoteHost, cfg *config.ConfigRoot) error {
 	exec, err := executor.NewExecutorFromConfig(hostName, remote)
 	if err != nil {
 		return err
 	}
 
-	// copy the systemd service config
-	cmd := fmt.Sprintf("cat > /tmp/gosong.service <<'EOF'\n%s\nEOF", resource.SystemdConfig)
+	// create deployment directory structure
+	dirs := fmt.Sprintf("%s/releases %s/shared /var/log/gosong /var/lib/gosong/apps", cfg.AppPath, cfg.AppPath)
+	if _, err := exec.RunRaw("mkdir -p " + dirs); err != nil {
+		return fmt.Errorf("failed to create directories: %w", err)
+	}
+	logger.Info("[%s] created deployment directories", hostName)
 
-	if _, err := exec.RunRaw(cmd); err != nil {
-		return err
+	// if proxy is configured: validate it and create snippet placeholder
+	if cfg.Proxy.Type != "" {
+		backend, err := proxy.New(cfg.Proxy.Type)
+		if err != nil {
+			return err
+		}
+		if err := backend.Validate(exec, cfg.Proxy); err != nil {
+			return fmt.Errorf("[%s] proxy validation failed: %w", hostName, err)
+		}
+		// create empty snippet placeholder so the Caddyfile import doesn't fail on first deploy
+		if cfg.Proxy.SnippetPath != "" {
+			cmd := fmt.Sprintf("test -f %s || echo '' > %s", cfg.Proxy.SnippetPath, cfg.Proxy.SnippetPath)
+			if _, err := exec.RunRaw(cmd); err != nil {
+				logger.Warn("[%s] could not create proxy snippet placeholder: %v", hostName, err)
+			} else {
+				logger.Info("[%s] proxy snippet placeholder ready at %s", hostName, cfg.Proxy.SnippetPath)
+			}
+		}
 	}
 
-	logger.Info("[%s] copy systemd unit config...", hostName)
-
-	// download the binary thriugh github releases
-	fmt.Printf("%s", resource.InitScript)
-	result, err := exec.RunRaw(resource.InitScript)
-	logger.Info("[%s] download gosong binary: %s", hostName, result)
-
-	return err
+	return nil
 }

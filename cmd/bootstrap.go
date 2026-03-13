@@ -14,7 +14,6 @@ func Execute() {
 		Usage: "zero-downtime deploy tool",
 		Commands: []*cli.Command{
 			DeployCommand(),
-			DaemonCommand(),
 			ProcessCommand(),
 		},
 	}

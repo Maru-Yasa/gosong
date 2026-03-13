@@ -9,10 +9,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ProcessConfig struct {
-	AgentPath    string
-	AppsPath     string
-	SockFilePath string
+type ProxyConfig struct {
+	Type        string `yaml:"type"`         // "caddy" (more backends planned)
+	SnippetPath string `yaml:"snippet_path"` // path on remote, e.g. /etc/caddy/gosong-myapp.conf
+	CaddyConfig string `yaml:"caddy_config"` // main Caddyfile path, e.g. /etc/caddy/Caddyfile
+	SiteAddress string `yaml:"site_address"` // e.g. example.com
 }
 
 type RemoteHost struct {
@@ -41,10 +42,11 @@ type ConfigRoot struct {
 	AppPath string                `yaml:"app_path"`
 	App     App                   `yaml:"app"`
 	Source  Source                `yaml:"source"`
+	Proxy   ProxyConfig           `yaml:"proxy,omitempty"`
 }
 
 type Config struct {
-	Config             ConfigRoot            `yaml:"config"`
+	Config ConfigRoot            `yaml:"config"`
 	Tasks  map[string]tasks.Task `yaml:"tasks"`
 }
 

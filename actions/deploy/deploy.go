@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/Maru-Yasa/gosong/pkg/logger"
-	"github.com/Maru-Yasa/gosong/pkg/templateutil"
-
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"github.com/Maru-Yasa/gosong/internal/executor"
+	"github.com/Maru-Yasa/gosong/internal/proxy"
 	"github.com/Maru-Yasa/gosong/internal/tasks"
+	"github.com/Maru-Yasa/gosong/pkg/logger"
+	"github.com/Maru-Yasa/gosong/pkg/templateutil"
 	"github.com/urfave/cli/v3"
 )
 
@@ -45,7 +45,7 @@ func Deploy(cli *cli.Command) error {
 	return runTaskOnHost(hostName, &cfg.Config, &remote, "deploy", cfg.Tasks)
 }
 
-func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, taskName string, tasks map[string]tasks.Task) error {
+func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, taskName string, uTasks map[string]tasks.Task) error {
 	exec, err := executor.NewExecutorFromConfig(name, remote)
 	if err != nil {
 		logger.Error(fmt.Sprint("Failed to create executor: ", err), remote.Hostname)
@@ -53,28 +53,57 @@ func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHos
 	}
 
 	lastReleaseID, err := executor.GetLastIDFromHost(exec, cfg.AppPath)
-
 	if err != nil {
 		return err
 	}
 
 	releaseID := lastReleaseID + 1
 	cfgMap, err := templateutil.ToMap(cfg)
-
 	if err != nil {
 		return err
 	}
 
-	// override config
+	// base overrides
 	cfgMap["ReleaseID"] = releaseID
 	cfgMap["ReleasePath"] = filepath.Join(cfg.AppPath, "releases", strconv.Itoa(releaseID))
+
+	// inject blue-green port variables when ports are configured
+	if len(cfg.App.Ports) >= 2 {
+		activePort, err := executor.GetActivePort(exec, cfg.App.Name, cfg.App.Ports)
+		if err != nil {
+			return fmt.Errorf("failed to determine active port: %w", err)
+		}
+		greenPort := executor.GetGreenPort(cfg.App.Ports, activePort)
+		cfgMap["ActivePort"] = activePort
+		cfgMap["GreenPort"] = greenPort
+	}
+
+	// inject proxy-switch task dynamically based on proxy type
+	if cfg.Proxy.Type != "" {
+		backend, err := proxy.New(cfg.Proxy.Type)
+		if err != nil {
+			return err
+		}
+		// validate proxy setup before running any tasks
+		if err := backend.Validate(exec, cfg.Proxy); err != nil {
+			return fmt.Errorf("[%s] proxy validation failed: %w", name, err)
+		}
+		greenPort, _ := cfgMap["GreenPort"].(int)
+		if uTasks == nil {
+			uTasks = make(map[string]tasks.Task)
+		}
+		uTasks["proxy-switch"] = tasks.Task{
+			Description: fmt.Sprintf("Switch %s proxy to port %d", cfg.Proxy.Type, greenPort),
+			Steps:       backend.SwitchSteps(greenPort, cfg.Proxy),
+		}
+	}
 
 	params := executor.RunTaskParams{
 		Exec:     exec,
 		Cfg:      cfg,
 		CfgMap:   cfgMap,
 		TaskName: taskName,
-		UTask:    tasks,
+		UTask:    uTasks,
 		Cwd:      "",
 	}
 
