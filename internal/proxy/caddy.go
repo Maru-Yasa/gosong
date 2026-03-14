@@ -30,15 +30,15 @@ func (c *CaddyBackend) Validate(exec executor.Executor, cfg config.ProxyConfig) 
 		return fmt.Errorf("Caddyfile not found at %s", cfg.CaddyConfig)
 	}
 
-	// 3. snippet path must be set
+	// 3. snippet path must be set (auto-defaulted by deploy before reaching here)
 	if cfg.SnippetPath == "" {
 		return fmt.Errorf("proxy.snippet_path is not set in your gosong config")
 	}
 
-	// 4. snippet directory must exist (writable)
+	// 4. ensure snippet directory exists (create it if needed)
 	snippetDir := filepath.Dir(cfg.SnippetPath)
-	if _, err := exec.RunRaw(fmt.Sprintf("test -d %s && test -w %s", snippetDir, snippetDir)); err != nil {
-		return fmt.Errorf("snippet directory %s does not exist or is not writable", snippetDir)
+	if _, err := exec.RunRaw(fmt.Sprintf("mkdir -p %s", snippetDir)); err != nil {
+		return fmt.Errorf("could not create snippet directory %s: %s", snippetDir, err)
 	}
 
 	// 5. check that the main Caddyfile imports the snippet (warn only, not fatal)

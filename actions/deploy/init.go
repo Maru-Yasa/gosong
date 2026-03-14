@@ -44,10 +44,10 @@ func runInit(hostName string, remote *config.RemoteHost, cfg *config.ConfigRoot)
 		return err
 	}
 
-	// create deployment directory structure
-	dirs := fmt.Sprintf("%s/releases %s/shared /var/log/gosong /var/lib/gosong/apps", cfg.AppPath, cfg.AppPath)
-	if _, err := exec.RunRaw("mkdir -p " + dirs); err != nil {
-		return fmt.Errorf("failed to create directories: %w", err)
+	// create all directories under app_path (no root required)
+	appDirs := fmt.Sprintf("%s/releases %s/shared %s/logs %s/state", cfg.AppPath, cfg.AppPath, cfg.AppPath, cfg.AppPath)
+	if out, err := exec.RunRaw("mkdir -p " + appDirs); err != nil {
+		return fmt.Errorf("failed to create app directories: %w\n%s", err, out)
 	}
 	logger.Info("[%s] created deployment directories", hostName)
 
@@ -57,17 +57,19 @@ func runInit(hostName string, remote *config.RemoteHost, cfg *config.ConfigRoot)
 		if err != nil {
 			return err
 		}
-		if err := backend.Validate(exec, cfg.Proxy); err != nil {
+		proxyCfg := cfg.Proxy
+		if proxyCfg.SnippetPath == "" {
+			proxyCfg.SnippetPath = fmt.Sprintf("%s/state/%s.caddy.conf", cfg.AppPath, cfg.App.Name)
+		}
+		if err := backend.Validate(exec, proxyCfg); err != nil {
 			return fmt.Errorf("[%s] proxy validation failed: %w", hostName, err)
 		}
 		// create empty snippet placeholder so the Caddyfile import doesn't fail on first deploy
-		if cfg.Proxy.SnippetPath != "" {
-			cmd := fmt.Sprintf("test -f %s || echo '' > %s", cfg.Proxy.SnippetPath, cfg.Proxy.SnippetPath)
-			if _, err := exec.RunRaw(cmd); err != nil {
-				logger.Warn("[%s] could not create proxy snippet placeholder: %v", hostName, err)
-			} else {
-				logger.Info("[%s] proxy snippet placeholder ready at %s", hostName, cfg.Proxy.SnippetPath)
-			}
+		cmd := fmt.Sprintf("test -f %s || echo '' > %s", proxyCfg.SnippetPath, proxyCfg.SnippetPath)
+		if _, err := exec.RunRaw(cmd); err != nil {
+			logger.Warn("[%s] could not create proxy snippet placeholder: %v", hostName, err)
+		} else {
+			logger.Info("[%s] proxy snippet placeholder ready at %s — add `import %s` to your Caddyfile", hostName, proxyCfg.SnippetPath, proxyCfg.SnippetPath)
 		}
 	}
 

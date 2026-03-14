@@ -235,17 +235,17 @@ func TestCaddyBackend_Validate_MissingSnippetPath(t *testing.T) {
 	}
 }
 
-func TestCaddyBackend_Validate_SnippetDirNotWritable(t *testing.T) {
+func TestCaddyBackend_Validate_SnippetDirCannotBeCreated(t *testing.T) {
 	b := &CaddyBackend{}
 	exec := &mockExecutor{fn: func(cmd string) (string, error) {
-		if strings.Contains(cmd, "test -d") {
-			return "", errors.New("not writable")
+		if strings.Contains(cmd, "mkdir -p") && strings.Contains(cmd, "caddy") {
+			return "", errors.New("permission denied")
 		}
 		return "", nil
 	}}
 	err := b.Validate(exec, validCaddyCfg())
 	if err == nil {
-		t.Fatal("expected error when snippet dir is not writable")
+		t.Fatal("expected error when snippet dir cannot be created")
 	}
 }
 

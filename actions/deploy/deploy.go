@@ -31,7 +31,7 @@ func Deploy(cli *cli.Command) error {
 		// loop all hosts
 		for name, remote := range cfg.Config.Remote {
 			if err := runTaskOnHost(name, &cfg.Config, &remote, "deploy", cfg.Tasks); err != nil {
-				logger.Error(fmt.Sprint("host failed: ", err), name)
+				logger.Error("[%s] host failed: %v", name, err)
 			}
 		}
 		return nil
@@ -48,7 +48,7 @@ func Deploy(cli *cli.Command) error {
 func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHost, taskName string, uTasks map[string]tasks.Task) error {
 	exec, err := executor.NewExecutorFromConfig(name, remote)
 	if err != nil {
-		logger.Error(fmt.Sprint("Failed to create executor: ", err), remote.Hostname)
+		logger.Error("[%s] Failed to create executor: %v", remote.Hostname, err)
 		return err
 	}
 
@@ -69,7 +69,7 @@ func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHos
 
 	// inject blue-green port variables when ports are configured
 	if len(cfg.App.Ports) >= 2 {
-		activePort, err := executor.GetActivePort(exec, cfg.App.Name, cfg.App.Ports)
+		activePort, err := executor.GetActivePort(exec, cfg.AppPath, cfg.App.Name, cfg.App.Ports)
 		if err != nil {
 			return fmt.Errorf("failed to determine active port: %w", err)
 		}
@@ -84,8 +84,12 @@ func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHos
 		if err != nil {
 			return err
 		}
+		proxyCfg := cfg.Proxy
+		if proxyCfg.SnippetPath == "" {
+			proxyCfg.SnippetPath = fmt.Sprintf("%s/state/%s.caddy.conf", cfg.AppPath, cfg.App.Name)
+		}
 		// validate proxy setup before running any tasks
-		if err := backend.Validate(exec, cfg.Proxy); err != nil {
+		if err := backend.Validate(exec, proxyCfg); err != nil {
 			return fmt.Errorf("[%s] proxy validation failed: %w", name, err)
 		}
 		greenPort, _ := cfgMap["GreenPort"].(int)
@@ -94,7 +98,7 @@ func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHos
 		}
 		uTasks["proxy-switch"] = tasks.Task{
 			Description: fmt.Sprintf("Switch %s proxy to port %d", cfg.Proxy.Type, greenPort),
-			Steps:       backend.SwitchSteps(greenPort, cfg.Proxy),
+			Steps:       backend.SwitchSteps(greenPort, proxyCfg),
 		}
 	}
 
@@ -108,7 +112,7 @@ func runTaskOnHost(name string, cfg *config.ConfigRoot, remote *config.RemoteHos
 	}
 
 	if err := executor.RunTask(params); err != nil {
-		logger.Error(fmt.Sprint("Task failed: ", err), name)
+		logger.Error("[%s] Task failed: %v", name, err)
 		return err
 	}
 	return nil

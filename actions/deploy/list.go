@@ -1,8 +1,6 @@
 package deploy
 
 import (
-	"fmt"
-
 	"github.com/Maru-Yasa/gosong/internal/config"
 	"github.com/Maru-Yasa/gosong/pkg/logger"
 	"github.com/urfave/cli/v3"
@@ -22,7 +20,7 @@ func DeployList(cli *cli.Command) error {
 		// loop all hosts
 		for name, remote := range cfg.Config.Remote {
 			if err := runTaskOnHost(name, &cfg.Config, &remote, "show_releases", cfg.Tasks); err != nil {
-				logger.Error(fmt.Sprint("host failed: ", err), name)
+				logger.Error("[%s] host failed: %v", name, err)
 			}
 		}
 		return nil

@@ -1,30 +1,31 @@
 BINARY_NAME=gosong
 BUILD_DIR=build
 VERSION?=$(shell git describe --tags --abbrev=0)
+GO?=$(shell which go 2>/dev/null || echo /usr/local/go/bin/go)
 
 .PHONY: install build build-all clean release test
 
 install:
-	go mod tidy
+	$(GO) mod tidy
 
 build:
 	rm -rf $(BUILD_DIR)
 	@echo "Building for current platform..."
 	mkdir -p $(BUILD_DIR)/current
-	go build -o $(BUILD_DIR)/current/$(BINARY_NAME) main.go
+	$(GO) build -o $(BUILD_DIR)/current/$(BINARY_NAME) main.go
 
 build-all:
 	rm -rf $(BUILD_DIR)
 	@echo "Building for all major platforms..."
 	mkdir -p $(BUILD_DIR)
-	GOOS=linux   GOARCH=amd64 go build -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64   main.go
-	GOOS=linux   GOARCH=arm64 go build -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64   main.go
-	GOOS=darwin  GOARCH=amd64 go build -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64  main.go
-	GOOS=darwin  GOARCH=arm64 go build -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64  main.go
-	GOOS=windows GOARCH=amd64 go build -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe main.go
+	GOOS=linux   GOARCH=amd64 $(GO) build -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64   main.go
+	GOOS=linux   GOARCH=arm64 $(GO) build -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64   main.go
+	GOOS=darwin  GOARCH=amd64 $(GO) build -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64  main.go
+	GOOS=darwin  GOARCH=arm64 $(GO) build -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64  main.go
+	GOOS=windows GOARCH=amd64 $(GO) build -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe main.go
 
 test:
-	go test ./... -v
+	$(GO) test ./... -v
 
 clean:
 	rm -rf $(BUILD_DIR)

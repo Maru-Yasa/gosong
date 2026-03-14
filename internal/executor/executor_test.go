@@ -58,7 +58,7 @@ func TestGetActivePort_ReadsFromStateFile(t *testing.T) {
 	exec := &mockExecutor{fn: func(cmd string) (string, error) {
 		return "3001\n", nil
 	}}
-	port, err := GetActivePort(exec, "myapp", []int{3000, 3001})
+	port, err := GetActivePort(exec, "/opt/myapp", "myapp", []int{3000, 3001})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestGetActivePort_FallbackOnInvalidOutput(t *testing.T) {
 	exec := &mockExecutor{fn: func(cmd string) (string, error) {
 		return "not-a-number\n", nil
 	}}
-	port, err := GetActivePort(exec, "myapp", []int{3000, 3001})
+	port, err := GetActivePort(exec, "/opt/myapp", "myapp", []int{3000, 3001})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestGetActivePort_FallbackOnExecError(t *testing.T) {
 	exec := &mockExecutor{fn: func(cmd string) (string, error) {
 		return "", errors.New("ssh error")
 	}}
-	port, err := GetActivePort(exec, "myapp", []int{3000, 3001})
+	port, err := GetActivePort(exec, "/opt/myapp", "myapp", []int{3000, 3001})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestGetActivePort_FallbackOnExecError(t *testing.T) {
 
 func TestGetActivePort_EmptyPorts(t *testing.T) {
 	exec := &mockExecutor{}
-	port, err := GetActivePort(exec, "myapp", []int{})
+	port, err := GetActivePort(exec, "/opt/myapp", "myapp", []int{})
 	if err != nil {
 		t.Fatal(err)
 	}

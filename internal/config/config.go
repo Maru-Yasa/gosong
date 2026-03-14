@@ -17,11 +17,12 @@ type ProxyConfig struct {
 }
 
 type RemoteHost struct {
-	Type     common.ExecutorType `yaml:"type"`
-	Hostname string              `yaml:"hostname"`
-	User     string              `yaml:"user"`
-	Port     int                 `yaml:"port,omitempty"`
-	KeyPath  string              `yaml:"keyPath,omitempty"`
+	Type      common.ExecutorType `yaml:"type"`
+	Hostname  string              `yaml:"hostname"`
+	User      string              `yaml:"user"`
+	Port      int                 `yaml:"port,omitempty"`
+	KeyPath   string              `yaml:"keyPath,omitempty"`
+	ShellInit string              `yaml:"shell_init,omitempty"` // extra shell commands sourced before every remote command (e.g. ". $HOME/.nvm/nvm.sh")
 }
 
 type Source struct {

@@ -61,7 +61,7 @@ func RunTask(params RunTaskParams) error {
 			}
 			str, err := params.Exec.Run(cmdRun, currentCwd)
 			if err != nil {
-				logger.Error(fmt.Sprintf("Command failed: %v\nOutput: %s", err, strings.TrimSpace(str)), params.Exec.GetName())
+				logger.Error("[%s] Command failed: %v\nOutput: %s", params.Exec.GetName(), err, strings.TrimSpace(str))
 				return fmt.Errorf("command failed: %v\noutput: %s", err, strings.TrimSpace(str))
 			}
 			logger.Info(fmt.Sprint(strings.TrimSpace(str)))
@@ -117,11 +117,11 @@ func GetLastIDFromHost(exec Executor, appPath string) (int, error) {
 
 // GetActivePort reads the currently active port from the remote state file.
 // Falls back to ports[0] if the file doesn't exist (first deploy).
-func GetActivePort(exec Executor, appName string, ports []int) (int, error) {
+func GetActivePort(exec Executor, appPath, appName string, ports []int) (int, error) {
 	if len(ports) == 0 {
 		return 0, nil
 	}
-	stateFile := fmt.Sprintf("/var/lib/gosong/apps/%s.current_port", appName)
+	stateFile := fmt.Sprintf("%s/state/%s.current_port", appPath, appName)
 	out, err := exec.RunRaw(fmt.Sprintf("cat %s 2>/dev/null || echo %d", stateFile, ports[0]))
 	if err != nil {
 		return ports[0], nil

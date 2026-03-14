@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -16,7 +17,14 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-const appsPath = "/var/lib/gosong/apps"
+// localAppsPath returns the user-space registry path (no root required).
+func localAppsPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "/tmp/gosong/apps"
+	}
+	return filepath.Join(home, ".gosong", "apps")
+}
 
 func ProcessCommand() *cli.Command {
 	return &cli.Command{
@@ -110,7 +118,7 @@ func ProcessStopCommand() *cli.Command {
 // --- Local execution (no SSH) ---
 
 func localProcessStart(log logger.Logger, appName, bin string, port int, args []string) error {
-	repo := registry.NewFileRepository(appsPath)
+	repo := registry.NewFileRepository(localAppsPath())
 
 	// reuse saved config if app already registered
 	saved, _ := repo.Find(appName)
@@ -166,7 +174,7 @@ func localProcessStart(log logger.Logger, appName, bin string, port int, args []
 }
 
 func localProcessStatus(log logger.Logger, appName string) error {
-	repo := registry.NewFileRepository(appsPath)
+	repo := registry.NewFileRepository(localAppsPath())
 	app, err := repo.Find(appName)
 	if err != nil {
 		log.Info("app %s not found", appName)
@@ -186,7 +194,7 @@ func localProcessStatus(log logger.Logger, appName string) error {
 }
 
 func localProcessStop(log logger.Logger, appName string) error {
-	repo := registry.NewFileRepository(appsPath)
+	repo := registry.NewFileRepository(localAppsPath())
 	app, err := repo.Find(appName)
 	if err != nil || app == nil {
 		log.Info("app %s not found", appName)
@@ -211,33 +219,38 @@ func localProcessStop(log logger.Logger, appName string) error {
 
 // --- Remote execution (SSH) ---
 
-func remoteExecutor(cfgFile, hostName string) (executor.Executor, error) {
+func remoteExecutor(cfgFile, hostName string) (executor.Executor, *config.Config, error) {
 	cfg, err := config.Load(cfgFile)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if hostName == "" {
-		return nil, fmt.Errorf("--host is required when using --config")
+		return nil, nil, fmt.Errorf("--host is required when using --config")
 	}
 	remote, ok := cfg.Config.Remote[hostName]
 	if !ok {
-		return nil, fmt.Errorf("host %q not found in config", hostName)
+		return nil, nil, fmt.Errorf("host %q not found in config", hostName)
 	}
-	return executor.NewExecutorFromConfig(hostName, &remote)
+	exec, err := executor.NewExecutorFromConfig(hostName, &remote)
+	if err != nil {
+		return nil, nil, err
+	}
+	return exec, cfg, nil
 }
 
 func remoteProcessStart(cfgFile, hostName, appName, bin string, port int, args []string) error {
-	exec, err := remoteExecutor(cfgFile, hostName)
+	exec, cfg, err := remoteExecutor(cfgFile, hostName)
 	if err != nil {
 		return err
 	}
 
-	logFile := fmt.Sprintf("/var/log/gosong/%s.log", appName)
-	pidFile := fmt.Sprintf("/var/lib/gosong/apps/%s.pid", appName)
+	appPath := cfg.Config.AppPath
+	logFile := fmt.Sprintf("%s/logs/%s.log", appPath, appName)
+	pidFile := fmt.Sprintf("%s/state/%s.pid", appPath, appName)
 	cmd := strings.Join(append([]string{bin}, args...), " ")
 	script := fmt.Sprintf(
-		"mkdir -p /var/log/gosong /var/lib/gosong/apps && PORT=%d nohup %s > %s 2>&1 & echo $! > %s && echo $!",
-		port, cmd, logFile, pidFile,
+		"mkdir -p %s/logs %s/state && PORT=%d nohup %s > %s 2>&1 & echo $! > %s && echo $!",
+		appPath, appPath, port, cmd, logFile, pidFile,
 	)
 
 	out, err := exec.RunRaw(script)
@@ -249,12 +262,12 @@ func remoteProcessStart(cfgFile, hostName, appName, bin string, port int, args [
 }
 
 func remoteProcessStatus(cfgFile, hostName, appName string) error {
-	exec, err := remoteExecutor(cfgFile, hostName)
+	exec, cfg, err := remoteExecutor(cfgFile, hostName)
 	if err != nil {
 		return err
 	}
 
-	pidFile := fmt.Sprintf("/var/lib/gosong/apps/%s.pid", appName)
+	pidFile := fmt.Sprintf("%s/state/%s.pid", cfg.Config.AppPath, appName)
 	script := fmt.Sprintf(
 		"if [ -f %s ]; then pid=$(cat %s); kill -0 $pid 2>/dev/null && echo \"running (PID $pid)\" || echo stopped; else echo 'not found'; fi",
 		pidFile, pidFile,
@@ -269,12 +282,12 @@ func remoteProcessStatus(cfgFile, hostName, appName string) error {
 }
 
 func remoteProcessStop(cfgFile, hostName, appName string) error {
-	exec, err := remoteExecutor(cfgFile, hostName)
+	exec, cfg, err := remoteExecutor(cfgFile, hostName)
 	if err != nil {
 		return err
 	}
 
-	pidFile := fmt.Sprintf("/var/lib/gosong/apps/%s.pid", appName)
+	pidFile := fmt.Sprintf("%s/state/%s.pid", cfg.Config.AppPath, appName)
 	script := fmt.Sprintf(
 		"if [ -f %s ]; then kill $(cat %s) && rm %s && echo stopped; else echo 'not running'; fi",
 		pidFile, pidFile, pidFile,
